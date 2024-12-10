@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.IO;
 using Dalamud.Configuration;
 
 namespace ContactsTracker;
@@ -8,8 +9,7 @@ public class Configuration : IPluginConfiguration
 {
     public int Version { get; set; } = 0;
 
-    public bool IsConfigWindowMovable { get; set; } = true;
-    public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true;
+    public bool EnableLogging { get; set; } = false;
 
     // the below exist just to make saving less cumbersome
     public void Save()
