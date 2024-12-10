@@ -1,4 +1,3 @@
-using System.IO;
 using ContactsTracker.Windows;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
@@ -38,7 +37,7 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Open Main Window"
+            HelpMessage = "Open Plugin"
         });
 
         PluginInterface.UiBuilder.Draw += DrawUI;
@@ -49,6 +48,7 @@ public sealed class Plugin : IDalamudPlugin
 
         ClientState.TerritoryChanged += OnTerritoryChanged;
         ClientState.CfPop += OnCfPop;
+        ClientState.Logout += OnLogout;
         DutyState.DutyCompleted += OnDutyCompleted;
     }
 
@@ -62,12 +62,23 @@ public sealed class Plugin : IDalamudPlugin
 
         ClientState.TerritoryChanged -= OnTerritoryChanged;
         ClientState.CfPop -= OnCfPop;
+        ClientState.Logout -= OnLogout;
         DutyState.DutyCompleted -= OnDutyCompleted;
     }
 
     private void OnCommand(string command, string args)
     {
         ToggleMainUI();
+    }
+
+    // TODO: User reconnection logic
+    private void OnLogout(int type, int code)
+    {
+        if (DataEntry.Instance != null && DataEntry.Instance.IsCompleted == false && !string.IsNullOrEmpty(DataEntry.Instance.TerritoryName))
+        {
+            Logger.Debug("User disconnected. Saving the record.");
+            Database.SaveInProgressEntry(DataEntry.Instance);
+        }
     }
 
     private void OnTerritoryChanged(ushort territoryID)
@@ -80,27 +91,41 @@ public sealed class Plugin : IDalamudPlugin
         Logger.Debug("Territory Changed");
         var newTerritory = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(territoryID).ContentFinderCondition.Value;
         var territoryName = newTerritory?.Name.ToString();
-        Logger.Debug("New Territory: " + newTerritory);
+        Logger.Debug("New Territory: " + (string.IsNullOrEmpty(territoryName) ? "Non Battle Area" : territoryName));
 
         if (DataEntry.Instance == null)
         {
-            DataEntry.Initialize();
+            if (!string.IsNullOrEmpty(territoryName))
+            {
+                Logger.Debug("New Entry");
+                if (Configuration.OnlyDutyRoulette)
+                {
+                    Logger.Debug("Duty Roulette Only Mode");
+                    return;
+                }
+                DataEntry.Initialize();
+            }
+            else
+            {
+                Logger.Debug("Non Battle Area");
+                return;
+            }
         }
-        
+
         if (DataEntry.Instance!.TerritoryName == null)
         {
             DataEntry.Instance.TerritoryName = territoryName;
+            DataEntry.Instance.jobName = ClientState.LocalPlayer?.ClassJob.Value.Name.ToString();
         }
         else
         {
             Logger.Debug("Territory Changed: " + DataEntry.Instance.TerritoryName + " -> " + territoryName);
             Logger.Debug("Force Finalizing Previous Entry");
-            DataEntry.finalize();
-            DataEntry.Initialize(territoryName);
+            DataEntry.finalize(Configuration);
         }
 
     }
-    
+
 
     private void OnDutyCompleted(object? sender, ushort territoryID)
     {
@@ -117,9 +142,12 @@ public sealed class Plugin : IDalamudPlugin
         }
 
         DataEntry.Instance.IsCompleted = true;
-        DataEntry.finalize();
+        DataEntry.finalize(Configuration);
 
-        ChatGui.Print("Record Completed");
+        if (Configuration.PrintToChat)
+        {
+            ChatGui.Print("ContactsTracker Record Completed");
+        }
     }
 
     private unsafe void OnCfPop(ContentFinderCondition condition)
@@ -129,13 +157,14 @@ public sealed class Plugin : IDalamudPlugin
             return;
         }
 
-        Logger.Debug("CF Pop");
+        Logger.Debug("Finder Pop");
 
         var queueInfo = ContentsFinder.Instance()->QueueInfo;
         if (queueInfo.PoppedContentType == ContentsFinderQueueInfo.PoppedContentTypes.Roulette)
         {
-            Logger.Debug("Roulette Mode " + queueInfo.PoppedContentType);
+            Logger.Debug("Roulette Mode");
             var type = DataManager.GetExcelSheet<ContentRoulette>()?.GetRow(queueInfo.PoppedContentId).Name.ToString();
+            DataEntry.Reset(); // Maybe not needed
             DataEntry.Initialize(null, type);
             Logger.Debug("Roulette Type: " + type);
         }

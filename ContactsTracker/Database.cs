@@ -1,3 +1,4 @@
+using CsvHelper;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
@@ -8,7 +9,6 @@ public class Database
 {
     public static string dataPath = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, "data.json");
     public static string tempPath = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, "temp.json"); // As journaling
-    public static bool isDirty = File.Exists(tempPath); // If temp file exists, then it's dirty
 
     public static List<DataEntry> Entries { get; private set; } = [];
 
@@ -38,7 +38,7 @@ public class Database
         }
         else
         {
-            Plugin.Logger.Debug("Failed to load data.json!!!");
+            Plugin.Logger.Debug("Failed to load data.json!");
         }
     }
 
@@ -59,7 +59,28 @@ public class Database
 
     public static void Export()
     {
-        // TODO: Export as CSV
+        var exportPath = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, "export.csv");
+        var records = JsonConvert.DeserializeObject<List<DataEntry>>(File.ReadAllText(dataPath));
+        if (records == null)
+        {
+            Plugin.Logger.Debug("Failed to export data.json!");
+            return;
+        }
+        else if (records.Count == 0)
+        {
+            Plugin.Logger.Debug("No records to export.");
+            return;
+        }
+        else
+        {
+            using (var writer = new StreamWriter(exportPath))
+            using (var csv = new CsvWriter(writer, System.Globalization.CultureInfo.InvariantCulture))
+            {
+                csv.WriteRecords(records);
+            }
+        }
+
+        Plugin.ChatGui.Print($"Exported to {exportPath}");
     }
 
 }

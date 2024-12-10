@@ -1,4 +1,3 @@
-using Dalamud.Game.ClientState.Party;
 using System;
 
 namespace ContactsTracker;
@@ -27,24 +26,32 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
         Instance = _dataEntry;
     }
 
-    public static void finalize()
+    public static void finalize(Configuration configuration)
     {
         if (Instance == null)
         {
             return;
         }
 
-        Instance.jobName = Plugin.ClientState.LocalPlayer?.ClassJob.Value.Name.ToString();
+        Instance.jobName = Plugin.ClientState.LocalPlayer?.ClassJob.Value.Name.ToString(); // Some area allows job change
         Instance.endAt = DateTime.Now.ToString("T");
 
         var numOfParty = Plugin.PartyList.Length;
-        if (numOfParty > 1 && numOfParty <= 8) // Not Alliance
+
+        if (numOfParty == 0 && configuration.RecordSolo == false)
         {
-            string[] names = new string[numOfParty];
-            for (int i = 0; i < numOfParty; i++)
+            Plugin.Logger.Debug("Solo record is disabled. Ignoring the record.");
+            Reset();
+            return;
+        }
+
+        if (numOfParty > 1 && numOfParty <= 8) // TODO: Alliance Support
+        {
+            var names = new string[numOfParty];
+            for (var i = 0; i < numOfParty; i++)
             {
-                IPartyMember? partyMember = Plugin.PartyList.CreatePartyMemberReference(Plugin.PartyList.GetPartyMemberAddress(i));
-                names[i] = (partyMember?.Name.ToString()+ " @ " + partyMember?.World.Value.Name.ToString()) ?? "Unknown";
+                var partyMember = Plugin.PartyList.CreatePartyMemberReference(Plugin.PartyList.GetPartyMemberAddress(i));
+                names[i] = (partyMember?.Name.ToString() + " @ " + partyMember?.World.Value.Name.ToString()) ?? "Unknown";
             }
             Instance.partyMembers = names;
         }

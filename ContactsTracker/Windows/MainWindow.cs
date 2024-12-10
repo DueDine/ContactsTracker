@@ -1,8 +1,7 @@
-using System;
-using System.Numerics;
-using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
+using System;
+using System.Numerics;
 
 namespace ContactsTracker.Windows;
 
@@ -40,10 +39,16 @@ public class MainWindow : Window, IDisposable
                 DrawSettingsTab();
                 ImGui.EndTabItem();
             }
+            if (ImGui.BeginTabItem("Data"))
+            {
+                DrawDataTab();
+                ImGui.EndTabItem();
+            }
             ImGui.EndTabBar();
         }
     }
 
+    // TODO: Filter / Search by any field
     private void DrawMainTab()
     {
         if (Plugin.Configuration.EnableLogging == false)
@@ -55,15 +60,15 @@ public class MainWindow : Window, IDisposable
         var entries = Database.Entries;
         if (entries.Count == 0)
         {
-            ImGui.Text("No entries yet.");
+            ImGui.Text("No record yet.");
             return;
         }
 
-        if (ImGui.BeginCombo("Place - Day - Time", $"{entries[selectedTab].TerritoryName} - {entries[selectedTab].Date} - {entries[selectedTab].beginAt}"))
+        if (ImGui.BeginCombo("Select Entry", $"{entries[selectedTab].TerritoryName} - {entries[selectedTab].Date} - {entries[selectedTab].beginAt}"))
         {
             for (var i = 0; i < entries.Count; i++)
             {
-                bool isSelected = selectedTab == i;
+                var isSelected = selectedTab == i;
                 if (ImGui.Selectable($"{entries[i].TerritoryName} - {entries[i].beginAt}", selectedTab == i))
                 {
                     selectedTab = i;
@@ -112,6 +117,33 @@ public class MainWindow : Window, IDisposable
             entry.comment = commentBuffer;
             Database.Save();
         }
+        ImGui.Spacing();
+
+        if (ImGui.Button("Delete Entry"))
+        {
+            ImGui.OpenPopup("Confirm Deletion"); // Double check
+        }
+
+        if (ImGui.BeginPopupModal("Confirm Deletion"))
+        {
+            ImGui.Text("Are you sure you want to delete this entry?");
+            ImGui.Separator();
+
+            if (ImGui.Button("Yes"))
+            {
+                entries.RemoveAt(selectedTab);
+                Database.Save();
+
+                selectedTab = Math.Max(0, selectedTab - 1); // Avoid out of range
+                ImGui.CloseCurrentPopup();
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("No"))
+            {
+                ImGui.CloseCurrentPopup();
+            }
+            ImGui.EndPopup();
+        }
 
     }
 
@@ -122,6 +154,35 @@ public class MainWindow : Window, IDisposable
         {
             Plugin.Configuration.EnableLogging = enableLogging;
             Plugin.Configuration.Save();
+        }
+
+        var recordSolo = Plugin.Configuration.RecordSolo;
+        if (ImGui.Checkbox("Record Solo", ref recordSolo))
+        {
+            Plugin.Configuration.RecordSolo = recordSolo;
+            Plugin.Configuration.Save();
+        }
+
+        var printToChat = Plugin.Configuration.PrintToChat;
+        if (ImGui.Checkbox("Print To Chat", ref printToChat))
+        {
+            Plugin.Configuration.PrintToChat = printToChat;
+            Plugin.Configuration.Save();
+        }
+
+        var onlyDutyRoulette = Plugin.Configuration.OnlyDutyRoulette;
+        if (ImGui.Checkbox("Only Record Duty Roulette", ref onlyDutyRoulette))
+        {
+            Plugin.Configuration.OnlyDutyRoulette = onlyDutyRoulette;
+            Plugin.Configuration.Save();
+        }
+    }
+
+    private static void DrawDataTab()
+    {
+        if (ImGui.Button("Export to CSV"))
+        {
+            Database.Export();
         }
     }
 }
