@@ -13,7 +13,6 @@ namespace ContactsTracker;
 public sealed class Plugin : IDalamudPlugin
 {
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
-    [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
     [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
     [PluginService] internal static IClientState ClientState { get; private set; } = null!;
     [PluginService] internal static IDutyState DutyState { get; private set; } = null!;
@@ -73,38 +72,44 @@ public sealed class Plugin : IDalamudPlugin
 
     private void OnTerritoryChanged(ushort territoryID)
     {
-        Logger.Debug("Territory Changed");
-        var newTerritory = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(territoryID).ContentFinderCondition.Value.Name.ToString();
-        Logger.Debug("New Territory: " + newTerritory);
-        if (newTerritory == "")
+        if (Configuration.EnableLogging == false)
         {
-            Logger.Debug("Not a instanced area");
             return;
+        }
+
+        Logger.Debug("Territory Changed");
+        var newTerritory = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(territoryID).ContentFinderCondition.Value;
+        var territoryName = newTerritory?.Name.ToString();
+        Logger.Debug("New Territory: " + newTerritory);
+
+        if (DataEntry.Instance == null)
+        {
+            DataEntry.Initialize();
+        }
+        
+        if (DataEntry.Instance!.TerritoryName == null)
+        {
+            DataEntry.Instance.TerritoryName = territoryName;
         }
         else
         {
-            if (DataEntry.Instance == null)
-            {
-                DataEntry.Initialize();
-            }
-            else
-            {
-                if (DataEntry.Instance.TerritoryName == null)
-                {
-                    DataEntry.Instance.TerritoryName = newTerritory;
-                }
-                else
-                {
-                    Logger.Debug("Player leave instance");
-                    DataEntry.Reset();
-                }
-            }
+            Logger.Debug("Territory Changed: " + DataEntry.Instance.TerritoryName + " -> " + territoryName);
+            Logger.Debug("Force Finalizing Previous Entry");
+            DataEntry.finalize();
+            DataEntry.Initialize(territoryName);
         }
+
     }
+    
 
     private void OnDutyCompleted(object? sender, ushort territoryID)
     {
-        Logger.Debug("Duty Completed" + territoryID);
+        if (Configuration.EnableLogging == false)
+        {
+            return;
+        }
+
+        Logger.Debug("Duty Completed: " + territoryID);
 
         if (DataEntry.Instance == null)
         {
@@ -113,11 +118,17 @@ public sealed class Plugin : IDalamudPlugin
 
         DataEntry.Instance.IsCompleted = true;
         DataEntry.finalize();
+
         ChatGui.Print("Record Completed");
     }
 
     private unsafe void OnCfPop(ContentFinderCondition condition)
     {
+        if (Configuration.EnableLogging == false)
+        {
+            return;
+        }
+
         Logger.Debug("CF Pop");
 
         var queueInfo = ContentsFinder.Instance()->QueueInfo;

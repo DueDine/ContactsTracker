@@ -1,8 +1,8 @@
 {
   "Author": "Mistral",
   "Name": "ContactsTracker",
-  "Punchline": "Help you record previous party members.",
-  "Description": "A description that shows up in /xlplugins. List any major slash-command(s).",
+  "Punchline": "Help you remember previous contacts.",
+  "Description": "Remember Enable Logging in Settings Tab.",
   "ApplicableVersion": "any",
   "Tags": [
     "plugin"

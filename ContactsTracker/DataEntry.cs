@@ -13,7 +13,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
     public string? endAt { get; set; } = null; // Null when not completed like disconnection etc.
     public string? jobName { get; set; } = null; // User's job
     public string[]? partyMembers { get; set; } = null; // Null when solo
-    public string? comment { get; set; } = null; // User's comment
+    public string comment { get; set; } = ""; // User's comment
 
     public static DataEntry? Instance { get; private set; }
 
@@ -51,7 +51,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
 
         Database.InsertEntry(Instance);
 
-        Instance = null; // Reset
+        Reset();
     }
 
     public static void Reset()
