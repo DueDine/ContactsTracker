@@ -10,7 +10,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
     public string Date { get; set; } = DateTime.Now.ToString("yyyy-MM-dd");
     public string beginAt { get; set; } = DateTime.Now.ToString("T");
     public string? endAt { get; set; } = null; // Null when not completed like disconnection etc.
-    public string? jobName { get; set; } = null; // User's job
+    public string? jobName { get; set; } = null; // User's job Shouldn't be null finally
     public string[]? partyMembers { get; set; } = null; // Null when solo
     public string comment { get; set; } = ""; // User's comment
 
@@ -33,7 +33,11 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
             return;
         }
 
-        Instance.jobName = Plugin.ClientState.LocalPlayer?.ClassJob.Value.Name.ToString(); // Some area allows job change, take the final job
+        var localPlayer = Plugin.ClientState.LocalPlayer;
+        if (localPlayer != null)
+        {
+            DataEntry.Instance.jobName = localPlayer.ClassJob.Value.Name.ToString() + " Level: " + localPlayer.Level;
+        }
         Instance.endAt = DateTime.Now.ToString("T");
 
         var numOfParty = Plugin.PartyList.Length;

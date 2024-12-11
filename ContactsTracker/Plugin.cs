@@ -46,9 +46,14 @@ public sealed class Plugin : IDalamudPlugin
 
         Database.Load();
 
+        //
+        // Logger.Debug($"Info: {ClientState.LocalContentId}"); TODO: Character -> CID Mapping
+        //
+
         ClientState.TerritoryChanged += OnTerritoryChanged;
         ClientState.CfPop += OnCfPop;
         ClientState.Logout += OnLogout;
+        ClientState.Login += OnLogon;
         DutyState.DutyCompleted += OnDutyCompleted;
     }
 
@@ -63,6 +68,7 @@ public sealed class Plugin : IDalamudPlugin
         ClientState.TerritoryChanged -= OnTerritoryChanged;
         ClientState.CfPop -= OnCfPop;
         ClientState.Logout -= OnLogout;
+        ClientState.Login -= OnLogon;
         DutyState.DutyCompleted -= OnDutyCompleted;
     }
 
@@ -71,7 +77,29 @@ public sealed class Plugin : IDalamudPlugin
         ToggleMainUI();
     }
 
-    // TODO: User reconnection logic
+
+    private void OnLogon()
+    {
+        if (ClientState.IsLoggedIn)
+        {
+            var territoryName = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(ClientState.TerritoryType).Name.ToString();
+            if (!string.IsNullOrEmpty(territoryName))
+            {
+                Logger.Debug("Try to recover previous entry");
+                var entry = Database.LoadFromTempPath();
+                if (entry != null)
+                {
+                    Logger.Debug("Recovered");
+                    DataEntry.Initialize(entry);
+                }
+                else
+                {
+                    Logger.Debug("No previous entry found");
+                }
+            }
+        }
+    }
+
     private void OnLogout(int type, int code)
     {
         if (DataEntry.Instance != null && DataEntry.Instance.IsCompleted == false && !string.IsNullOrEmpty(DataEntry.Instance.TerritoryName))
@@ -115,7 +143,15 @@ public sealed class Plugin : IDalamudPlugin
         if (DataEntry.Instance!.TerritoryName == null)
         {
             DataEntry.Instance.TerritoryName = territoryName;
-            DataEntry.Instance.jobName = ClientState.LocalPlayer?.ClassJob.Value.Name.ToString();
+            var localPlayer = ClientState.LocalPlayer;
+            if (localPlayer != null)
+            {
+                DataEntry.Instance.jobName = localPlayer.ClassJob.Value.Name.ToString() + " Level: " + localPlayer.Level;
+            }
+        }
+        else if (DataEntry.Instance.TerritoryName == territoryName)
+        {
+            Logger.Debug("Territory Unchanged: " + territoryName);
         }
         else
         {

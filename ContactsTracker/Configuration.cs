@@ -22,6 +22,8 @@ public class Configuration : IPluginConfiguration
 
     public int ArchiveKeepEntries { get; set; } = 5; // Remove oldest ArchiveWhenEntriesExceed - ArchiveKeepEntries entries
 
+    public bool EnableDeleteAll { get; set; } = false; // Dangerous. Disabled by default.
+
     public void Save()
     {
         Plugin.PluginInterface.SavePluginConfig(this);

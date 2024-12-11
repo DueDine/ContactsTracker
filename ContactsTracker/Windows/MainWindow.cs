@@ -53,7 +53,7 @@ public class MainWindow : Window, IDisposable
     {
         if (Plugin.Configuration.EnableLogging == false)
         {
-            ImGui.Text("Logging Disabled. You can only view previous entries.");
+            ImGui.Text("Logging Disabled. Read-Only Mode.");
             ImGui.Spacing();
         }
 
@@ -84,22 +84,22 @@ public class MainWindow : Window, IDisposable
         var entry = entries[selectedTab];
         ImGui.Text($"Name: {entry.TerritoryName}");
         ImGui.Spacing();
-        ImGui.Text($"Roulette Type: {(string.IsNullOrEmpty(entry.RouletteType) ? "N/A" : entry.RouletteType)}");
+        ImGui.Text($"Type: {(string.IsNullOrEmpty(entry.RouletteType) ? "Normal" : entry.RouletteType)}");
         ImGui.Spacing();
         ImGui.Text($"Completed?: {(entry.IsCompleted ? "Yes" : "No")}");
         ImGui.Spacing();
         ImGui.Text($"Date: {entry.Date}");
         ImGui.Spacing();
-        ImGui.Text($"Start: {entry.beginAt}");
+        ImGui.Text($"Time: {entry.beginAt} - {(string.IsNullOrEmpty(entry.endAt) ? "N/A" : entry.endAt)}");
         ImGui.Spacing();
-        ImGui.Text($"End: {(string.IsNullOrEmpty(entry.endAt) ? "N/A" : entry.endAt)}");
-        ImGui.Spacing();
+        // Capitalize the first letter if needed
         ImGui.Text($"Job: {entry.jobName}");
         ImGui.Spacing();
 
         ImGui.Text("Party Members:");
         if (entry.partyMembers == null)
         {
+            ImGui.SameLine();
             ImGui.Text("Solo");
         }
         else
@@ -112,7 +112,7 @@ public class MainWindow : Window, IDisposable
         ImGui.Spacing();
 
         commentBuffer = entry.comment;
-        if (ImGui.InputTextMultiline("Comment", ref commentBuffer, 256, new Vector2(0, 100)))
+        if (ImGui.InputTextMultiline("Comment", ref commentBuffer, 512, new Vector2(0, 100)))
         {
             entry.comment = commentBuffer;
             Database.Save();
@@ -182,6 +182,16 @@ public class MainWindow : Window, IDisposable
             Plugin.Configuration.OnlyDutyRoulette = onlyDutyRoulette;
             Plugin.Configuration.Save();
         }
+
+        ImGui.Spacing();
+
+        var deleteAll = Plugin.Configuration.EnableDeleteAll;
+        if (ImGui.Checkbox("Enable Delete at Data Tab", ref deleteAll))
+        {
+            Plugin.Configuration.EnableDeleteAll = deleteAll;
+            Plugin.Configuration.Save();
+        }
+
     }
 
     private void DrawDataTab()
@@ -205,7 +215,7 @@ public class MainWindow : Window, IDisposable
             ImGui.Spacing();
 
             var archiveLimit = Plugin.Configuration.ArchiveWhenEntriesExceed;
-            if (ImGui.InputInt("Limit", ref archiveLimit))
+            if (ImGui.InputInt("Limit of Active Entries", ref archiveLimit))
             {
                 Plugin.Configuration.ArchiveWhenEntriesExceed = archiveLimit;
                 Plugin.Configuration.Save();
@@ -214,12 +224,41 @@ public class MainWindow : Window, IDisposable
             ImGui.Spacing();
 
             var archiveKeep = Plugin.Configuration.ArchiveKeepEntries;
-            if (ImGui.InputInt("Keep", ref archiveKeep))
+            if (ImGui.InputInt("Keep Newest", ref archiveKeep))
             {
                 Plugin.Configuration.ArchiveKeepEntries = archiveKeep;
                 Plugin.Configuration.Save();
             }
 
         }
+
+        ImGui.Spacing();
+
+        if (Plugin.Configuration.EnableDeleteAll)
+        {
+            if (ImGui.Button("Delete ALL Active Entries"))
+            {
+                ImGui.OpenPopup("Confirm Delete ALL");
+            }
+
+            if (ImGui.BeginPopupModal("Confirm Delete ALL"))
+            {
+                ImGui.Text("Are you sure you want to delete ALL? This action is irreversible.");
+                ImGui.Separator();
+
+                if (ImGui.Button("Yes"))
+                {
+                    Database.Reset();
+                    ImGui.CloseCurrentPopup();
+                }
+                ImGui.SameLine();
+                if (ImGui.Button("No"))
+                {
+                    ImGui.CloseCurrentPopup();
+                }
+                ImGui.EndPopup();
+            }
+        }
+
     }
 }

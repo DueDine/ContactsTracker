@@ -11,6 +11,7 @@ public class Database
 {
     public static string dataPath = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, "data.json");
     public static string tempPath = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, "temp.json"); // As journaling
+    public static string contentIdPath = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, "contentId.json"); // TODO
 
     public static List<DataEntry> Entries { get; private set; } = [];
 
@@ -52,7 +53,19 @@ public class Database
         {
             return null;
         }
-        return JsonConvert.DeserializeObject<DataEntry>(File.ReadAllText(tempPath));
+
+        var content = File.ReadAllText(tempPath);
+        if (content != null)
+        {
+            File.Delete(tempPath); // Remove temp file
+            Plugin.Logger.Debug("Recover previous entry");
+            return JsonConvert.DeserializeObject<DataEntry>(content);
+        }
+        else
+        {
+            Plugin.Logger.Debug("Failed to load temp.json!");
+            return null;
+        }
     }
 
     public static void SaveInProgressEntry(DataEntry entry)
@@ -132,7 +145,13 @@ public class Database
         {
             Plugin.Logger.Debug("Failed to archive data.json!");
         }
-        
+
+    }
+
+    public static void Reset() // Very dangerous
+    {
+        Entries = [];
+        Save();
     }
 
 }
