@@ -64,12 +64,12 @@ public class MainWindow : Window, IDisposable
             return;
         }
 
-        if (ImGui.BeginCombo("Select Entry", $"{entries[selectedTab].TerritoryName} - {entries[selectedTab].Date} - {entries[selectedTab].beginAt}"))
+        if (ImGui.BeginCombo("Select Entry", $"{entries[selectedTab].TerritoryName} - {entries[selectedTab].Date} {entries[selectedTab].beginAt}"))
         {
             for (var i = 0; i < entries.Count; i++)
             {
                 var isSelected = selectedTab == i;
-                if (ImGui.Selectable($"{entries[i].TerritoryName} - {entries[i].beginAt}", selectedTab == i))
+                if (ImGui.Selectable($"{entries[i].TerritoryName} - {entries[i].Date} {entries[i].beginAt}", selectedTab == i))
                 {
                     selectedTab = i;
                 }
@@ -156,6 +156,8 @@ public class MainWindow : Window, IDisposable
             Plugin.Configuration.Save();
         }
 
+        ImGui.Spacing();
+
         var recordSolo = Plugin.Configuration.RecordSolo;
         if (ImGui.Checkbox("Record Solo", ref recordSolo))
         {
@@ -163,12 +165,16 @@ public class MainWindow : Window, IDisposable
             Plugin.Configuration.Save();
         }
 
+        ImGui.Spacing();
+
         var printToChat = Plugin.Configuration.PrintToChat;
         if (ImGui.Checkbox("Print To Chat", ref printToChat))
         {
             Plugin.Configuration.PrintToChat = printToChat;
             Plugin.Configuration.Save();
         }
+
+        ImGui.Spacing();
 
         var onlyDutyRoulette = Plugin.Configuration.OnlyDutyRoulette;
         if (ImGui.Checkbox("Only Record Duty Roulette", ref onlyDutyRoulette))
@@ -178,11 +184,42 @@ public class MainWindow : Window, IDisposable
         }
     }
 
-    private static void DrawDataTab()
+    private void DrawDataTab()
     {
         if (ImGui.Button("Export to CSV"))
         {
             Database.Export();
+        }
+
+        ImGui.Spacing();
+
+        var autoArchive = Plugin.Configuration.ArchiveOldEntries;
+        if (ImGui.Checkbox("Enable Auto Archive", ref autoArchive))
+        {
+            Plugin.Configuration.ArchiveOldEntries = autoArchive;
+            Plugin.Configuration.Save();
+        }
+
+        if (autoArchive)
+        {
+            ImGui.Spacing();
+
+            var archiveLimit = Plugin.Configuration.ArchiveWhenEntriesExceed;
+            if (ImGui.InputInt("Limit", ref archiveLimit))
+            {
+                Plugin.Configuration.ArchiveWhenEntriesExceed = archiveLimit;
+                Plugin.Configuration.Save();
+            }
+
+            ImGui.Spacing();
+
+            var archiveKeep = Plugin.Configuration.ArchiveKeepEntries;
+            if (ImGui.InputInt("Keep", ref archiveKeep))
+            {
+                Plugin.Configuration.ArchiveKeepEntries = archiveKeep;
+                Plugin.Configuration.Save();
+            }
+
         }
     }
 }

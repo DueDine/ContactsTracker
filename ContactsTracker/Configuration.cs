@@ -16,7 +16,12 @@ public class Configuration : IPluginConfiguration
 
     public bool OnlyDutyRoulette { get; set; } = false;
 
-    // the below exist just to make saving less cumbersome
+    public bool ArchiveOldEntries { get; set; } = false;
+
+    public int ArchiveWhenEntriesExceed { get; set; } = -1; // -1 means no limit
+
+    public int ArchiveKeepEntries { get; set; } = 5; // Remove oldest ArchiveWhenEntriesExceed - ArchiveKeepEntries entries
+
     public void Save()
     {
         Plugin.PluginInterface.SavePluginConfig(this);

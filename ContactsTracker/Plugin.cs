@@ -148,6 +148,8 @@ public sealed class Plugin : IDalamudPlugin
         {
             ChatGui.Print("ContactsTracker Record Completed");
         }
+
+        Database.Archive(Configuration);
     }
 
     private unsafe void OnCfPop(ContentFinderCondition condition)

@@ -33,7 +33,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
             return;
         }
 
-        Instance.jobName = Plugin.ClientState.LocalPlayer?.ClassJob.Value.Name.ToString(); // Some area allows job change
+        Instance.jobName = Plugin.ClientState.LocalPlayer?.ClassJob.Value.Name.ToString(); // Some area allows job change, take the final job
         Instance.endAt = DateTime.Now.ToString("T");
 
         var numOfParty = Plugin.PartyList.Length;
