@@ -82,12 +82,12 @@ public sealed class Plugin : IDalamudPlugin
     {
         if (ClientState.IsLoggedIn)
         {
-            var territoryName = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(ClientState.TerritoryType).Name.ToString();
+            var territoryName = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(ClientState.TerritoryType).ContentFinderCondition.Value.Name.ToString();
             if (!string.IsNullOrEmpty(territoryName))
             {
                 Logger.Debug("Try to recover previous entry");
                 var entry = Database.LoadFromTempPath();
-                if (entry != null)
+                if (entry != null && entry.TerritoryName == territoryName)
                 {
                     Logger.Debug("Recovered");
                     DataEntry.Initialize(entry);
@@ -126,9 +126,9 @@ public sealed class Plugin : IDalamudPlugin
             if (!string.IsNullOrEmpty(territoryName))
             {
                 Logger.Debug("New Entry");
-                if (Configuration.OnlyDutyRoulette)
+                if (Configuration.OnlyDutyRoulette) // If DR, already initialized by CFPop
                 {
-                    Logger.Debug("Duty Roulette Only Mode");
+                    Logger.Debug("Duty Roulette Only Mode. No New Entry");
                     return;
                 }
                 DataEntry.Initialize();
@@ -202,7 +202,7 @@ public sealed class Plugin : IDalamudPlugin
         {
             Logger.Debug("Roulette Mode");
             var type = DataManager.GetExcelSheet<ContentRoulette>()?.GetRow(queueInfo.PoppedContentId).Name.ToString();
-            DataEntry.Reset(); // Maybe not needed
+            DataEntry.Reset(); // Reset. Some may choose to abandon the roulette
             DataEntry.Initialize(null, type);
             Logger.Debug("Roulette Type: " + type);
         }
