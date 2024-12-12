@@ -1,12 +1,13 @@
 {
     "Author": "Due",
     "Name": "ContactsTracker",
-    "Punchline": "Help you remember previous contacts.",
-    "Description": "Record Duty Completeion and Team Composition.\nRemember to check Settings Tab.",
+    "Punchline": "Help you Record Duty Completeion.",
+    "Description": "Record Duty Completeion and Team Composition (TODO).\nRemember to check Settings Tab.\nYou can use the Settings button below to enter analyze window",
     "ApplicableVersion": "any",
     "Tags": [
         "plugin",
         "track",
-        "party"
+        "duty",
+        "roulette"
     ]
 }

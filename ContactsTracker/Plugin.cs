@@ -27,7 +27,8 @@ public sealed class Plugin : IDalamudPlugin
 
     public readonly WindowSystem WindowSystem = new("ContactsTracker");
     private MainWindow MainWindow { get; init; }
-    
+    private AnalyzeWindow AnalyzeWindow { get; init; }
+
     public readonly FileDialogManager FileDialogManager = new();
 
     public Plugin()
@@ -35,17 +36,20 @@ public sealed class Plugin : IDalamudPlugin
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
         MainWindow = new MainWindow(this);
+        AnalyzeWindow = new AnalyzeWindow(this);
 
         WindowSystem.AddWindow(MainWindow);
+        WindowSystem.AddWindow(AnalyzeWindow);
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Open Plugin"
+            HelpMessage = "Open Plugin\n/ctracker analyze -> AnalyzeWindow\n/ctracker reload -> Reload Database"
         });
 
         PluginInterface.UiBuilder.Draw += DrawUI;
 
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
+        PluginInterface.UiBuilder.OpenConfigUi += ToggleAnalyzeUI;
 
         Database.Load();
 
@@ -75,7 +79,21 @@ public sealed class Plugin : IDalamudPlugin
 
     private void OnCommand(string command, string args)
     {
-        ToggleMainUI();
+        if (command is CommandName)
+        {
+            switch(args)
+            {
+                case "analyze":
+                    AnalyzeWindow.Toggle();
+                    break;
+                case "reload":
+                    Database.Load();
+                    break;
+                default:
+                    MainWindow.Toggle();
+                    break;
+            }
+        }
     }
 
     /*
@@ -246,12 +264,14 @@ public sealed class Plugin : IDalamudPlugin
         {
             Logger.Debug("Non Roulette Mode");
             DataEntry.Reset(); // Handle case where user DR -> Abandon -> Non DR vice versa
+            DataEntry.Initialize(null, "Normal", false);
         }
     }
 
     private void DrawUI() => WindowSystem.Draw();
 
     public void ToggleMainUI() => MainWindow.Toggle();
+    public void ToggleAnalyzeUI() => AnalyzeWindow.Toggle();
 
     public static string UpperFirst(string s) // why is this not a built-in function in C#?
     {

@@ -13,7 +13,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
     public string? endAt { get; set; } = null; // Null when not completed like disconnection etc.
     public string? jobName { get; set; } = null; // Shouldn't be null
     // Additional Info: Contacts
-    public string[]? partyMembers { get; set; } = null; // Null when solo
+    public string? partyMembers { get; set; } = null; // flatten this to string so that it can be saved to CSV
     // Additional Info: Comments
     public string comment { get; set; } = ""; // User's comment
 
@@ -53,7 +53,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
                 Reset();
                 return;
             }
-            Instance.partyMembers = ["Solo"];
+            Instance.partyMembers = "Solo";
         }
 
         if (numOfParty > 1 && numOfParty <= 8) // TODO: Alliance Support
@@ -64,8 +64,13 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
                 var partyMember = Plugin.PartyList.CreatePartyMemberReference(Plugin.PartyList.GetPartyMemberAddress(i));
                 names[i] = (partyMember?.Name.ToString() + " @ " + partyMember?.World.Value.Name.ToString()) ?? "Unknown";
             }
-            Instance.partyMembers = names;
+            foreach (var name in names)
+            {
+                Instance.partyMembers += name + "| "; // Delimiter other than comma to avoid CSV confusion
+            }
         }
+
+        Instance.TerritoryName = Plugin.UpperFirst(Instance.TerritoryName!);
 
         Database.InsertEntry(Instance);
 

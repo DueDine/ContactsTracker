@@ -95,6 +95,7 @@ public class Database
         {
             using var writer = new StreamWriter(exportPath);
             using var csv = new CsvWriter(writer, System.Globalization.CultureInfo.InvariantCulture);
+
             csv.WriteRecords(records);
         }
 
@@ -130,7 +131,7 @@ public class Database
                 var beginAt = csv.GetField<string>("beginAt");
                 var endAt = csv.GetField<string>("endAt");
                 var jobName = csv.GetField<string>("jobName");
-                var partyMembers = csv.GetField<string[]>("partyMembers");
+                var partyMembers = csv.GetField<string>("partyMembers");
                 var comment = csv.GetField<string>("comment");
                 var entry = new DataEntry(territoryName, rouletteType, isCompleted)
                 {

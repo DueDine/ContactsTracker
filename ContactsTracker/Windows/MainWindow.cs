@@ -12,6 +12,7 @@ public class MainWindow : Window, IDisposable
     private int selectedTab = 0;
     private string commentBuffer = string.Empty;
     private bool isFileDialogOpen = false;
+    private bool doubleCheck = false;
 
     public MainWindow(Plugin plugin)
         : base("Contacts Tracker", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
@@ -100,6 +101,28 @@ public class MainWindow : Window, IDisposable
             ImGui.Text("If you just reconnect, duration will not display here.");
         }
         ImGui.Spacing();
+
+        if (ImGui.Button("Ignore"))
+        {
+            doubleCheck = true;
+        }
+
+        if (doubleCheck)
+        {
+            ImGui.SameLine();
+            if (ImGui.Button("Confirm Ignore"))
+            {
+                DataEntry.Reset();
+                doubleCheck = false;
+            }
+
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel"))
+            {
+                doubleCheck = false;
+            }
+        }
+
     }
 
     // TODO: Filter / Search by any field
@@ -141,7 +164,6 @@ public class MainWindow : Window, IDisposable
         ImGui.Spacing();
         ImGui.Text($"Time: {entry.beginAt} - {(string.IsNullOrEmpty(entry.endAt) ? "N/A" : entry.endAt)}");
         ImGui.Spacing();
-        // Capitalize the first letter if needed
         ImGui.Text($"Job: {entry.jobName}");
         ImGui.Spacing();
 
@@ -153,7 +175,9 @@ public class MainWindow : Window, IDisposable
         }
         else
         {
-            foreach (var member in entry.partyMembers)
+            // Separate by |
+            var members = entry.partyMembers.Split('|');
+            foreach (var member in members)
             {
                 ImGui.BulletText(member);
             }
@@ -304,7 +328,7 @@ public class MainWindow : Window, IDisposable
 
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip("You should not enable this unless very limited storage.");
+                ImGui.SetTooltip("Do not enable this unless very limited storage.");
             }
 
             if (autoArchive)
