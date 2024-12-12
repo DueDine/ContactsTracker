@@ -11,6 +11,7 @@ public class MainWindow : Window, IDisposable
     private Plugin Plugin;
     private int selectedTab = 0;
     private string commentBuffer = string.Empty;
+    private bool isFileDialogOpen = false;
 
     public MainWindow(Plugin plugin)
         : base("Contacts Tracker", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
@@ -54,7 +55,6 @@ public class MainWindow : Window, IDisposable
         }
     }
 
-    // Display current active duty or previous one only
     private void DrawActiveTab()
     {
         if (Plugin.Configuration.EnableLogging == false)
@@ -165,6 +165,8 @@ public class MainWindow : Window, IDisposable
         }
         ImGui.Spacing();
 
+        /*
+         * Temporarily disabled until I figure out the UI
         commentBuffer = entry.comment;
         if (ImGui.InputTextMultiline("Comment", ref commentBuffer, 512, new Vector2(0, 100)))
         {
@@ -172,6 +174,7 @@ public class MainWindow : Window, IDisposable
             Database.Save();
         }
         ImGui.Spacing();
+        */
 
         if (ImGui.Button("Delete Entry"))
         {
@@ -278,6 +281,28 @@ public class MainWindow : Window, IDisposable
         if (ImGui.Button("Export to CSV"))
         {
             Database.Export();
+        }
+
+        ImGui.Spacing();
+
+        
+        if (ImGui.Button("Import from CSV"))
+        {
+            isFileDialogOpen = true;
+            Plugin.FileDialogManager.OpenFileDialog("Select a CSV File", ".csv", (success, paths) =>
+            {
+                if (success && paths.Count > 0)
+                {
+                    var path = paths.First();
+                    Database.Import(path);
+                }
+            }, 1, Plugin.PluginInterface.GetPluginConfigDirectory(), false);
+
+        }
+
+        if (isFileDialogOpen)
+        {
+            Plugin.FileDialogManager.Draw();
         }
 
         ImGui.Spacing();

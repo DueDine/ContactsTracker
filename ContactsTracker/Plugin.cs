@@ -1,5 +1,6 @@
-using ContactsTracker.Windows;
+﻿using ContactsTracker.Windows;
 using Dalamud.Game.Command;
+using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
@@ -26,6 +27,8 @@ public sealed class Plugin : IDalamudPlugin
 
     public readonly WindowSystem WindowSystem = new("ContactsTracker");
     private MainWindow MainWindow { get; init; }
+    
+    public readonly FileDialogManager FileDialogManager = new();
 
     public Plugin()
     {

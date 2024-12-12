@@ -46,11 +46,15 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
 
         var numOfParty = Plugin.PartyList.Length;
 
-        if (numOfParty == 0 && configuration.RecordSolo == false)
+        if (numOfParty == 0)
         {
-            Plugin.Logger.Debug("Solo record is disabled. Ignoring the record.");
-            Reset();
-            return;
+            if (configuration.RecordSolo == false)
+            {
+                Plugin.Logger.Debug("Solo record is disabled. Ignoring the record.");
+                Reset();
+                return;
+            }
+            Instance.partyMembers = ["Solo"];
         }
 
         if (numOfParty > 1 && numOfParty <= 8) // TODO: Alliance Support

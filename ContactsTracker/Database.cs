@@ -1,7 +1,9 @@
 using CsvHelper;
+using CsvHelper.Configuration;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -97,6 +99,65 @@ public class Database
         }
 
         Plugin.ChatGui.Print($"Exported to {exportPath}"); // Maybe we can open explorer directly?
+    }
+
+    public static bool Import(string filePath)
+    {
+        if (!File.Exists(filePath))
+        {
+            Plugin.Logger.Debug("File not found.");
+            return false;
+        }
+
+        try
+        {
+            var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                MissingFieldFound = null, // Ignore missing fields
+            };
+            using var reader = new StreamReader(filePath);
+            using var csv = new CsvReader(reader, config);
+            var importedEntries = new List<DataEntry>();
+
+            csv.Read();
+            csv.ReadHeader();
+            while (csv.Read())
+            {
+                var territoryName = csv.GetField<string>("TerritoryName");
+                var rouletteType = csv.GetField<string>("RouletteType");
+                var isCompleted = csv.GetField<bool>("IsCompleted");
+                var date = csv.GetField<string>("Date");
+                var beginAt = csv.GetField<string>("beginAt");
+                var endAt = csv.GetField<string>("endAt");
+                var jobName = csv.GetField<string>("jobName");
+                var partyMembers = csv.GetField<string[]>("partyMembers");
+                var comment = csv.GetField<string>("comment");
+                var entry = new DataEntry(territoryName, rouletteType, isCompleted)
+                {
+                    Date = date!,
+                    beginAt = beginAt!,
+                    endAt = endAt,
+                    jobName = jobName,
+                    partyMembers = partyMembers,
+                    comment = comment! 
+                };
+                importedEntries.Add(entry);
+            }
+
+            foreach (var entry in importedEntries)
+            {
+                InsertEntry(entry);
+            }
+            Save();
+            Plugin.Logger.Debug($"Imported {importedEntries.Count} entries successfully.");
+            return true;
+        }
+        catch (Exception e)
+        {
+            Plugin.Logger.Debug("Failed to import.");
+            Plugin.Logger.Debug(e.Message);
+            return false;
+        }
     }
 
     public static void Archive(Configuration configuration)
