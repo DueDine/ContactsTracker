@@ -1,6 +1,7 @@
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using System;
+using System.Linq;
 using System.Numerics;
 
 namespace ContactsTracker.Windows;
@@ -29,9 +30,14 @@ public class MainWindow : Window, IDisposable
     {
         if (ImGui.BeginTabBar("MainTabBar"))
         {
-            if (ImGui.BeginTabItem("Main"))
+            if (ImGui.BeginTabItem("Active"))
             {
-                DrawMainTab();
+                DrawActiveTab();
+                ImGui.EndTabItem();
+            }
+            if (ImGui.BeginTabItem("History"))
+            {
+                DrawHistoryTab();
                 ImGui.EndTabItem();
             }
             if (ImGui.BeginTabItem("Settings"))
@@ -48,14 +54,62 @@ public class MainWindow : Window, IDisposable
         }
     }
 
-    // TODO: Filter / Search by any field
-    private void DrawMainTab()
+    // Display current active duty or previous one only
+    private void DrawActiveTab()
     {
         if (Plugin.Configuration.EnableLogging == false)
         {
             ImGui.Text("Logging Disabled. Read-Only Mode.");
             ImGui.Spacing();
         }
+
+        var entries = Database.Entries;
+        if (entries.Count == 0 && DataEntry.Instance == null)
+        {
+            ImGui.Text("No record yet.");
+            return;
+        }
+
+        var entry = entries.LastOrDefault();
+        if (DataEntry.Instance != null && !string.IsNullOrEmpty(DataEntry.Instance.TerritoryName))
+        {
+            entry = DataEntry.Instance;
+            ImGui.Text("Currently Logging");
+        }
+        else
+        {
+            ImGui.Text("No Active Log. Please check the History Tab.");
+            return;
+        }
+        ImGui.Spacing();
+        ImGui.Text($"Place: {entry.TerritoryName}");
+        ImGui.Spacing();
+        ImGui.Text($"Join via: {(string.IsNullOrEmpty(entry.RouletteType) ? "Normal" : entry.RouletteType)}");
+        ImGui.Spacing();
+        ImGui.Text($"When: {entry.Date}");
+        ImGui.SameLine();
+        ImGui.Text($"{entry.beginAt} - {(string.IsNullOrEmpty(entry.endAt) ? "N/A" : entry.endAt)}");
+        if (!string.IsNullOrEmpty(entry.endAt))
+        {
+            ImGui.Spacing();
+            ImGui.Text($"Duration: {DateTime.Parse(entry.endAt).Subtract(DateTime.Parse(entry.beginAt)):hh\\:mm\\:ss}");
+        }
+        else if (Plugin.DutyState.IsDutyStarted) // Still in progress
+        {
+            ImGui.Spacing();
+            ImGui.Text($"Duration: {DateTime.Now.Subtract(DateTime.Parse(entry.beginAt)):hh\\:mm\\:ss}");
+        }
+        else
+        {
+            ImGui.Spacing();
+            ImGui.Text("If you just reconnect, duration will not display here.");
+        }
+        ImGui.Spacing();
+    }
+
+    // TODO: Filter / Search by any field
+    private void DrawHistoryTab()
+    {
 
         var entries = Database.Entries;
         if (entries.Count == 0)
@@ -156,6 +210,11 @@ public class MainWindow : Window, IDisposable
             Plugin.Configuration.Save();
         }
 
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Enable to start recording data.");
+        }
+
         ImGui.Spacing();
 
         var recordSolo = Plugin.Configuration.RecordSolo;
@@ -163,6 +222,11 @@ public class MainWindow : Window, IDisposable
         {
             Plugin.Configuration.RecordSolo = recordSolo;
             Plugin.Configuration.Save();
+        }
+
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Enable to record solo duty.");
         }
 
         ImGui.Spacing();
@@ -174,6 +238,11 @@ public class MainWindow : Window, IDisposable
             Plugin.Configuration.Save();
         }
 
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("On Duty Complete, whether output 'ContactsTracker Record Completed'.");
+        }
+
         ImGui.Spacing();
 
         var onlyDutyRoulette = Plugin.Configuration.OnlyDutyRoulette;
@@ -183,6 +252,11 @@ public class MainWindow : Window, IDisposable
             Plugin.Configuration.Save();
         }
 
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Enable to only record duty joined by roulette.");
+        }
+
         ImGui.Spacing();
 
         var deleteAll = Plugin.Configuration.EnableDeleteAll;
@@ -190,6 +264,11 @@ public class MainWindow : Window, IDisposable
         {
             Plugin.Configuration.EnableDeleteAll = deleteAll;
             Plugin.Configuration.Save();
+        }
+
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Show the button to delete all active entries at Data Tab.");
         }
 
     }
@@ -210,12 +289,17 @@ public class MainWindow : Window, IDisposable
             Plugin.Configuration.Save();
         }
 
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("You should not enable this unless very limited storage.");
+        }
+
         if (autoArchive)
         {
             ImGui.Spacing();
 
             var archiveLimit = Plugin.Configuration.ArchiveWhenEntriesExceed;
-            if (ImGui.InputInt("Limit of Active Entries", ref archiveLimit))
+            if (ImGui.InputInt("Max Number of Active Entries", ref archiveLimit))
             {
                 Plugin.Configuration.ArchiveWhenEntriesExceed = archiveLimit;
                 Plugin.Configuration.Save();

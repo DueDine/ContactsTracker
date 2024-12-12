@@ -16,6 +16,8 @@ public class Configuration : IPluginConfiguration
 
     public bool OnlyDutyRoulette { get; set; } = false;
 
+    public bool KeepIncompleteEntry { get; set; } = true;
+
     public bool ArchiveOldEntries { get; set; } = false;
 
     public int ArchiveWhenEntriesExceed { get; set; } = -1; // -1 means no limit

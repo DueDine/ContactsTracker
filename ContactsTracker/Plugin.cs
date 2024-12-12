@@ -53,7 +53,6 @@ public sealed class Plugin : IDalamudPlugin
         ClientState.TerritoryChanged += OnTerritoryChanged;
         ClientState.CfPop += OnCfPop;
         ClientState.Logout += OnLogout;
-        ClientState.Login += OnLogon;
         DutyState.DutyCompleted += OnDutyCompleted;
     }
 
@@ -68,7 +67,6 @@ public sealed class Plugin : IDalamudPlugin
         ClientState.TerritoryChanged -= OnTerritoryChanged;
         ClientState.CfPop -= OnCfPop;
         ClientState.Logout -= OnLogout;
-        ClientState.Login -= OnLogon;
         DutyState.DutyCompleted -= OnDutyCompleted;
     }
 
@@ -77,11 +75,12 @@ public sealed class Plugin : IDalamudPlugin
         ToggleMainUI();
     }
 
-
+    /*
     private void OnLogon()
     {
-        if (ClientState.IsLoggedIn)
+        if (DutyState.IsDutyStarted && ClientState.IsLoggedIn)
         {
+            Logger.Debug("User reconnected. Prepare to recover.");
             var territoryName = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(ClientState.TerritoryType).ContentFinderCondition.Value.Name.ToString();
             if (!string.IsNullOrEmpty(territoryName))
             {
@@ -94,11 +93,12 @@ public sealed class Plugin : IDalamudPlugin
                 }
                 else
                 {
-                    Logger.Debug("No previous entry found");
+                    Logger.Debug("TerritoryName mismatch. Ignore it.");
                 }
             }
         }
     }
+    */
 
     private void OnLogout(int type, int code)
     {
@@ -116,26 +116,48 @@ public sealed class Plugin : IDalamudPlugin
             return;
         }
 
-        Logger.Debug("Territory Changed");
         var newTerritory = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(territoryID).ContentFinderCondition.Value;
         var territoryName = newTerritory?.Name.ToString();
+
+        if (Database.isDirty)
+        {
+            Logger.Debug("User reconnected. Prepare to recover.");
+            if (!string.IsNullOrEmpty(territoryName))
+            {
+                Logger.Debug("Try to recover previous entry");
+                var entry = Database.LoadFromTempPath();
+                if (entry != null && entry.TerritoryName == territoryName)
+                {
+                    Logger.Debug("Recovered");
+                    DataEntry.Initialize(entry);
+                }
+                else
+                {
+                    Logger.Debug("TerritoryName mismatch. Ignore it.");
+                }
+                Database.isDirty = false; // False whatever the result
+            }
+            return;
+        }
+
+        Logger.Debug("Territory Changed");
         Logger.Debug("New Territory: " + (string.IsNullOrEmpty(territoryName) ? "Non Battle Area" : territoryName));
 
         if (DataEntry.Instance == null)
         {
             if (!string.IsNullOrEmpty(territoryName))
             {
-                Logger.Debug("New Entry");
                 if (Configuration.OnlyDutyRoulette) // If DR, already initialized by CFPop
                 {
-                    Logger.Debug("Duty Roulette Only Mode. No New Entry");
+                    Logger.Debug("Duty Roulette Only Mode. No New Entry.");
                     return;
                 }
+                Logger.Debug("New Entry");
                 DataEntry.Initialize();
             }
             else
             {
-                Logger.Debug("Non Battle Area");
+                Logger.Debug("Non Battle Area -> No New Entry.");
                 return;
             }
         }
@@ -144,20 +166,28 @@ public sealed class Plugin : IDalamudPlugin
         {
             DataEntry.Instance.TerritoryName = territoryName;
             var localPlayer = ClientState.LocalPlayer;
-            if (localPlayer != null)
+            if (localPlayer != null) // This should be always true but just in case
             {
-                DataEntry.Instance.jobName = localPlayer.ClassJob.Value.Name.ToString() + " Level: " + localPlayer.Level;
+                DataEntry.Instance.jobName = UpperFirst(localPlayer.ClassJob.Value.Name.ToString());
             }
         }
-        else if (DataEntry.Instance.TerritoryName == territoryName)
+        else if (DataEntry.Instance.TerritoryName == territoryName) // Intened to handle rejoin. 
         {
             Logger.Debug("Territory Unchanged: " + territoryName);
         }
         else
         {
-            Logger.Debug("Territory Changed: " + DataEntry.Instance.TerritoryName + " -> " + territoryName);
+            Logger.Debug("Territory Changed: " + DataEntry.Instance.TerritoryName + " -> " + (string.IsNullOrEmpty(territoryName) ? "Non Battle Area" : territoryName));
             Logger.Debug("Force Finalizing Previous Entry");
-            DataEntry.finalize(Configuration);
+            if (Configuration.KeepIncompleteEntry)
+            {
+                DataEntry.finalize(Configuration);
+            }
+            else
+            {
+                Logger.Debug("Do not keep Incomplete. Ignore this.");
+                DataEntry.Reset();
+            }
         }
 
     }
@@ -185,7 +215,10 @@ public sealed class Plugin : IDalamudPlugin
             ChatGui.Print("ContactsTracker Record Completed");
         }
 
-        Database.Archive(Configuration);
+        if (Database.Entries.Count >= Configuration.ArchiveWhenEntriesExceed)
+        {
+            Database.Archive(Configuration);
+        }
     }
 
     private unsafe void OnCfPop(ContentFinderCondition condition)
@@ -206,9 +239,25 @@ public sealed class Plugin : IDalamudPlugin
             DataEntry.Initialize(null, type);
             Logger.Debug("Roulette Type: " + type);
         }
+        else
+        {
+            Logger.Debug("Non Roulette Mode");
+            DataEntry.Reset(); // Handle case where user DR -> Abandon -> Non DR vice versa
+        }
     }
 
     private void DrawUI() => WindowSystem.Draw();
 
     public void ToggleMainUI() => MainWindow.Toggle();
+
+    public static string UpperFirst(string s) // why is this not a built-in function in C#?
+    {
+        if (string.IsNullOrEmpty(s))
+        {
+            return string.Empty;
+        }
+        var a = s.ToCharArray();
+        a[0] = char.ToUpper(a[0]);
+        return new string(a);
+    }
 }

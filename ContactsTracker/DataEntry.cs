@@ -4,14 +4,17 @@ namespace ContactsTracker;
 
 public class DataEntry(string? territoryName, string? rouletteType, bool isCompleted)
 {
+    // Basic Logging
     public string? TerritoryName { get; set; } = territoryName;
     public string? RouletteType { get; set; } = rouletteType; // If joined by duty roulette
     public bool IsCompleted { get; set; } = isCompleted;
     public string Date { get; set; } = DateTime.Now.ToString("yyyy-MM-dd");
     public string beginAt { get; set; } = DateTime.Now.ToString("T");
     public string? endAt { get; set; } = null; // Null when not completed like disconnection etc.
-    public string? jobName { get; set; } = null; // User's job Shouldn't be null finally
+    public string? jobName { get; set; } = null; // Shouldn't be null
+    // Additional Info: Contacts
     public string[]? partyMembers { get; set; } = null; // Null when solo
+    // Additional Info: Comments
     public string comment { get; set; } = ""; // User's comment
 
     public static DataEntry? Instance { get; private set; }
@@ -36,7 +39,8 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
         var localPlayer = Plugin.ClientState.LocalPlayer;
         if (localPlayer != null)
         {
-            DataEntry.Instance.jobName = localPlayer.ClassJob.Value.Name.ToString() + " Level: " + localPlayer.Level;
+            // At least Frontline allows changing job inside. Maybe use list?
+            // DataEntry.Instance.jobName = localPlayer.ClassJob.Value.Name.ToString() + " Level: " + localPlayer.Level;
         }
         Instance.endAt = DateTime.Now.ToString("T");
 

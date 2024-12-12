@@ -12,6 +12,7 @@ public class Database
     public static string dataPath = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, "data.json");
     public static string tempPath = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, "temp.json"); // As journaling
     public static string contentIdPath = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, "contentId.json"); // TODO
+    public static bool isDirty = false; // If temp
 
     public static List<DataEntry> Entries { get; private set; } = [];
 
@@ -38,7 +39,6 @@ public class Database
         if (content != null)
         {
             Entries = content;
-            Plugin.Logger.Debug("Database Loaded");
         }
         else
         {
@@ -57,7 +57,7 @@ public class Database
         var content = File.ReadAllText(tempPath);
         if (content != null)
         {
-            File.Delete(tempPath); // Remove temp file
+            // File.Delete(tempPath); // Remove temp file
             Plugin.Logger.Debug("Recover previous entry");
             return JsonConvert.DeserializeObject<DataEntry>(content);
         }
@@ -71,6 +71,7 @@ public class Database
     public static void SaveInProgressEntry(DataEntry entry)
     {
         File.WriteAllText(tempPath, JsonConvert.SerializeObject(entry));
+        isDirty = true;
     }
 
     public static void Export()
