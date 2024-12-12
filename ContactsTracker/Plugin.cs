@@ -1,4 +1,4 @@
-﻿using ContactsTracker.Windows;
+using ContactsTracker.Windows;
 using Dalamud.Game.Command;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Windowing;
@@ -156,7 +156,7 @@ public sealed class Plugin : IDalamudPlugin
                     return;
                 }
                 Logger.Debug("New Entry");
-                DataEntry.Initialize();
+                DataEntry.Initialize(null, null, false);
             }
             else
             {
@@ -169,7 +169,7 @@ public sealed class Plugin : IDalamudPlugin
         {
             DataEntry.Instance.TerritoryName = territoryName;
             var localPlayer = ClientState.LocalPlayer;
-            if (localPlayer != null) // This should be always true but just in case
+            if (localPlayer != null) // Seems like Player available after TerritoryChanged. Have to rely OnDutyCompleted.
             {
                 DataEntry.Instance.jobName = UpperFirst(localPlayer.ClassJob.Value.Name.ToString());
             }
@@ -239,7 +239,7 @@ public sealed class Plugin : IDalamudPlugin
             Logger.Debug("Roulette Mode");
             var type = DataManager.GetExcelSheet<ContentRoulette>()?.GetRow(queueInfo.PoppedContentId).Name.ToString();
             DataEntry.Reset(); // Reset. Some may choose to abandon the roulette
-            DataEntry.Initialize(null, type);
+            DataEntry.Initialize(null, type, false);
             Logger.Debug("Roulette Type: " + type);
         }
         else

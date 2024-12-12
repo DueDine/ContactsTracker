@@ -46,11 +46,6 @@ public class MainWindow : Window, IDisposable
                 DrawSettingsTab();
                 ImGui.EndTabItem();
             }
-            if (ImGui.BeginTabItem("Data"))
-            {
-                DrawDataTab();
-                ImGui.EndTabItem();
-            }
             ImGui.EndTabBar();
         }
     }
@@ -206,168 +201,178 @@ public class MainWindow : Window, IDisposable
 
     private void DrawSettingsTab()
     {
-        var enableLogging = Plugin.Configuration.EnableLogging;
-        if (ImGui.Checkbox("Enable Logging", ref enableLogging))
+        if (ImGui.CollapsingHeader("General"))
         {
-            Plugin.Configuration.EnableLogging = enableLogging;
-            Plugin.Configuration.Save();
-        }
-
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip("Enable to start recording data.");
-        }
-
-        ImGui.Spacing();
-
-        var recordSolo = Plugin.Configuration.RecordSolo;
-        if (ImGui.Checkbox("Record Solo", ref recordSolo))
-        {
-            Plugin.Configuration.RecordSolo = recordSolo;
-            Plugin.Configuration.Save();
-        }
-
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip("Enable to record solo duty.");
-        }
-
-        ImGui.Spacing();
-
-        var printToChat = Plugin.Configuration.PrintToChat;
-        if (ImGui.Checkbox("Print To Chat", ref printToChat))
-        {
-            Plugin.Configuration.PrintToChat = printToChat;
-            Plugin.Configuration.Save();
-        }
-
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip("On Duty Complete, whether output 'ContactsTracker Record Completed'.");
-        }
-
-        ImGui.Spacing();
-
-        var onlyDutyRoulette = Plugin.Configuration.OnlyDutyRoulette;
-        if (ImGui.Checkbox("Only Record Duty Roulette", ref onlyDutyRoulette))
-        {
-            Plugin.Configuration.OnlyDutyRoulette = onlyDutyRoulette;
-            Plugin.Configuration.Save();
-        }
-
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip("Enable to only record duty joined by roulette.");
-        }
-
-        ImGui.Spacing();
-
-        var deleteAll = Plugin.Configuration.EnableDeleteAll;
-        if (ImGui.Checkbox("Enable Delete at Data Tab", ref deleteAll))
-        {
-            Plugin.Configuration.EnableDeleteAll = deleteAll;
-            Plugin.Configuration.Save();
-        }
-
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip("Show the button to delete all active entries at Data Tab.");
-        }
-
-    }
-
-    private void DrawDataTab()
-    {
-        if (ImGui.Button("Export to CSV"))
-        {
-            Database.Export();
-        }
-
-        ImGui.Spacing();
-
-        
-        if (ImGui.Button("Import from CSV"))
-        {
-            isFileDialogOpen = true;
-            Plugin.FileDialogManager.OpenFileDialog("Select a CSV File", ".csv", (success, paths) =>
+            var enableLogging = Plugin.Configuration.EnableLogging;
+            if (ImGui.Checkbox("Enable Logging", ref enableLogging))
             {
-                if (success && paths.Count > 0)
-                {
-                    var path = paths.First();
-                    Database.Import(path);
-                }
-            }, 1, Plugin.PluginInterface.GetPluginConfigDirectory(), false);
-
-        }
-
-        if (isFileDialogOpen)
-        {
-            Plugin.FileDialogManager.Draw();
-        }
-
-        ImGui.Spacing();
-
-        var autoArchive = Plugin.Configuration.ArchiveOldEntries;
-        if (ImGui.Checkbox("Enable Auto Archive", ref autoArchive))
-        {
-            Plugin.Configuration.ArchiveOldEntries = autoArchive;
-            Plugin.Configuration.Save();
-        }
-
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip("You should not enable this unless very limited storage.");
-        }
-
-        if (autoArchive)
-        {
-            ImGui.Spacing();
-
-            var archiveLimit = Plugin.Configuration.ArchiveWhenEntriesExceed;
-            if (ImGui.InputInt("Max Number of Active Entries", ref archiveLimit))
-            {
-                Plugin.Configuration.ArchiveWhenEntriesExceed = archiveLimit;
+                Plugin.Configuration.EnableLogging = enableLogging;
                 Plugin.Configuration.Save();
+            }
+
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Enable to start recording data.");
+            }
+
+            var recordSolo = Plugin.Configuration.RecordSolo;
+            if (ImGui.Checkbox("Record Solo", ref recordSolo))
+            {
+                Plugin.Configuration.RecordSolo = recordSolo;
+                Plugin.Configuration.Save();
+            }
+
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Enable to record solo duty.");
+            }
+
+            var onlyDutyRoulette = Plugin.Configuration.OnlyDutyRoulette;
+            if (ImGui.Checkbox("Only Record Duty Roulette", ref onlyDutyRoulette))
+            {
+                Plugin.Configuration.OnlyDutyRoulette = onlyDutyRoulette;
+                Plugin.Configuration.Save();
+            }
+
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Enable to only record duty joined by roulette.");
+            }
+        }
+
+        if (ImGui.CollapsingHeader("Output"))
+        {
+            var printToChat = Plugin.Configuration.PrintToChat;
+            if (ImGui.Checkbox("Print To Chat", ref printToChat))
+            {
+                Plugin.Configuration.PrintToChat = printToChat;
+                Plugin.Configuration.Save();
+            }
+
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("On Duty Complete, whether output 'ContactsTracker Record Completed'.");
+            }
+
+        }
+
+        if (ImGui.CollapsingHeader("Data"))
+        {
+            if (ImGui.Button("Export to CSV"))
+            {
+                Database.Export();
+            }
+
+            ImGui.SameLine();
+
+            if (ImGui.Button("Import from CSV"))
+            {
+                isFileDialogOpen = true;
+                Plugin.FileDialogManager.OpenFileDialog("Select a CSV File", ".csv", (success, paths) =>
+                {
+                    if (success && paths.Count > 0)
+                    {
+                        var path = paths.First();
+                        var ok = Database.Import(path);
+                        if (ok)
+                        {
+                            Plugin.ChatGui.Print("Imported successfully.");
+                        }
+                        else
+                        {
+                            Plugin.ChatGui.PrintError("Failed to import.");
+                        }
+                    }
+                    isFileDialogOpen = false;
+                }, 1, Plugin.PluginInterface.GetPluginConfigDirectory(), false);
+
+            }
+
+            if (isFileDialogOpen)
+            {
+                Plugin.FileDialogManager.Draw();
             }
 
             ImGui.Spacing();
 
-            var archiveKeep = Plugin.Configuration.ArchiveKeepEntries;
-            if (ImGui.InputInt("Keep Newest", ref archiveKeep))
+            var autoArchive = Plugin.Configuration.ArchiveOldEntries;
+            if (ImGui.Checkbox("Enable Auto Archive", ref autoArchive))
             {
-                Plugin.Configuration.ArchiveKeepEntries = archiveKeep;
+                Plugin.Configuration.ArchiveOldEntries = autoArchive;
                 Plugin.Configuration.Save();
             }
 
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("You should not enable this unless very limited storage.");
+            }
+
+            if (autoArchive)
+            {
+                ImGui.Spacing();
+
+                var archiveLimit = Plugin.Configuration.ArchiveWhenEntriesExceed;
+                if (ImGui.InputInt("Max Number of Active Entries", ref archiveLimit))
+                {
+                    Plugin.Configuration.ArchiveWhenEntriesExceed = archiveLimit;
+                    Plugin.Configuration.Save();
+                }
+
+                ImGui.Spacing();
+
+                var archiveKeep = Plugin.Configuration.ArchiveKeepEntries;
+                if (ImGui.InputInt("Keep Newest", ref archiveKeep))
+                {
+                    Plugin.Configuration.ArchiveKeepEntries = archiveKeep;
+                    Plugin.Configuration.Save();
+                }
+
+            }
+
+            ImGui.Spacing();
+
+            if (Plugin.Configuration.EnableDeleteAll)
+            {
+                if (ImGui.Button("Delete ALL Active Entries"))
+                {
+                    ImGui.OpenPopup("Confirm Delete ALL");
+                }
+
+                if (ImGui.BeginPopupModal("Confirm Delete ALL"))
+                {
+                    ImGui.Text("Are you sure you want to delete ALL? This action is irreversible.");
+                    ImGui.Separator();
+
+                    if (ImGui.Button("Yes"))
+                    {
+                        Database.Reset();
+                        ImGui.CloseCurrentPopup();
+                    }
+                    ImGui.SameLine();
+                    if (ImGui.Button("No"))
+                    {
+                        ImGui.CloseCurrentPopup();
+                    }
+                    ImGui.EndPopup();
+                }
+            }
+
         }
 
-        ImGui.Spacing();
-
-        if (Plugin.Configuration.EnableDeleteAll)
+        if (ImGui.CollapsingHeader("Advanced"))
         {
-            if (ImGui.Button("Delete ALL Active Entries"))
+            var deleteAll = Plugin.Configuration.EnableDeleteAll;
+            if (ImGui.Checkbox("Enable Delete at Data Tab", ref deleteAll))
             {
-                ImGui.OpenPopup("Confirm Delete ALL");
+                Plugin.Configuration.EnableDeleteAll = deleteAll;
+                Plugin.Configuration.Save();
             }
 
-            if (ImGui.BeginPopupModal("Confirm Delete ALL"))
+            if (ImGui.IsItemHovered())
             {
-                ImGui.Text("Are you sure you want to delete ALL? This action is irreversible.");
-                ImGui.Separator();
-
-                if (ImGui.Button("Yes"))
-                {
-                    Database.Reset();
-                    ImGui.CloseCurrentPopup();
-                }
-                ImGui.SameLine();
-                if (ImGui.Button("No"))
-                {
-                    ImGui.CloseCurrentPopup();
-                }
-                ImGui.EndPopup();
+                ImGui.SetTooltip("Show the button to delete all active entries at Data Tab.");
             }
         }
-
     }
+
 }

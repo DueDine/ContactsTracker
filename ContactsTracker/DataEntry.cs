@@ -39,8 +39,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
         var localPlayer = Plugin.ClientState.LocalPlayer;
         if (localPlayer != null)
         {
-            // At least Frontline allows changing job inside. Maybe use list?
-            // DataEntry.Instance.jobName = localPlayer.ClassJob.Value.Name.ToString() + " Level: " + localPlayer.Level;
+            Instance.jobName = Plugin.UpperFirst(localPlayer.ClassJob.Value.Name.ToString());
         }
         Instance.endAt = DateTime.Now.ToString("T");
 
