@@ -66,7 +66,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
             }
             foreach (var name in names)
             {
-                Instance.partyMembers += name + "| "; // Delimiter other than comma to avoid CSV confusion
+                Instance.partyMembers += name + " | "; // Delimiter other than comma to avoid CSV confusion
             }
         }
 

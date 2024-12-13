@@ -7,6 +7,7 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Lumina.Excel.Sheets;
+using System;
 
 namespace ContactsTracker;
 
@@ -186,6 +187,7 @@ public sealed class Plugin : IDalamudPlugin
         if (DataEntry.Instance!.TerritoryName == null)
         {
             DataEntry.Instance.TerritoryName = territoryName;
+            DataEntry.Instance.beginAt = DateTime.Now.ToString("T"); // Refresh
             var localPlayer = ClientState.LocalPlayer;
             if (localPlayer != null) // Seems like Player available after TerritoryChanged. Have to rely OnDutyCompleted.
             {

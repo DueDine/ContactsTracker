@@ -4,19 +4,26 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using static Lumina.Data.BaseFileHandle;
 
 namespace ContactsTracker.Windows;
+
+internal class QueryState
+{
+    public bool IsClicked { get; set; } = false;
+    public bool IsAvailable { get; set; } = false;
+}
 
 public class AnalyzeWindow : Window, IDisposable
 {
     private Plugin Plugin;
 
-    private bool isBusy = false;
-    private bool isClicked = false;
-    private int topX = 0;
-    private bool isAvailable = false;
+    private QueryState topXState = new();
+    private QueryState totalDurationState = new();
 
-    // For Tuple (Map, Roulette, Times)
+    private bool isBusy = false;
+    private int topX = 0;
+
     private static List<(string? TerritoryName, string? RouletteType, int Count)> ExtractOccurrences(List<DataEntry> Entries)
     {
         return Entries
@@ -24,7 +31,39 @@ public class AnalyzeWindow : Window, IDisposable
             .Select(group => (group.Key.TerritoryName, group.Key.RouletteType, group.Count()))
             .ToList();
     }
-    List<(string? TerritoryName, string? RouletteType, int Count)> resultsExtractOccurrences = [];
+
+    private List<(string? TerritoryName, string? RouletteType, int Count)> resultsExtractOccurrences = [];
+
+    private static List<(string? RouletteType, TimeSpan TotalDuration)> CalculateTotalDurations(List<DataEntry> Entries)
+    {
+        return Entries
+            .Where(entry => entry.IsCompleted && entry.endAt != null)
+            .GroupBy(entry => entry.RouletteType)
+            .Select(group =>
+            {
+                var totalDuration = group
+                    .Select(entry =>
+                    {
+                        if (TimeSpan.TryParse(entry.beginAt, out var beginAt) && TimeSpan.TryParse(entry.endAt, out var endAt))
+                        {
+                            if (endAt < beginAt)
+                            {
+                                endAt = endAt.Add(TimeSpan.FromDays(1));
+                            }
+
+                            return endAt - beginAt;
+                        }
+
+                        return TimeSpan.Zero;
+                    })
+                    .Aggregate(TimeSpan.Zero, (sum, duration) => sum + duration);
+
+                return (RouletteType: group.Key, TotalDuration: totalDuration);
+            })
+            .ToList();
+    }
+
+    private List<(string? RouletteType, TimeSpan TotalDuration)> resultsTotalDurations = [];
 
     public AnalyzeWindow(Plugin plugin)
     : base("Analyze - Still developing", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
@@ -52,16 +91,24 @@ public class AnalyzeWindow : Window, IDisposable
             {
                 if (topX < 1)
                     topX = 0;
-                isAvailable = false;
+                topXState.IsClicked = false;
             }
             ImGui.SameLine();
             if (ImGui.Button("Query"))
             {
-                isClicked = true;
-                isAvailable = false;
+                topXState.IsClicked = true;
+                topXState.IsAvailable = false;
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("Reset"))
+            {
+                topX = 0;
+                topXState.IsClicked = false;
+                topXState.IsAvailable = false;
+                resultsExtractOccurrences.Clear();
             }
 
-            if (isClicked && topX != 0)
+            if (topXState.IsClicked && topX != 0)
             {
                 if (isBusy)
                 {
@@ -72,18 +119,18 @@ public class AnalyzeWindow : Window, IDisposable
                     isBusy = true;
                     var occurrences = ExtractOccurrences(Database.Entries.Where(entry => entry.IsCompleted).ToList());
                     occurrences.Sort((a, b) => b.Count.CompareTo(a.Count));
-                    if (topX > 1)
+                    if (topX >= 1)
                     {
                         occurrences = occurrences.Take(topX).ToList();
                     }
                     resultsExtractOccurrences = occurrences;
-                    isAvailable = true;
+                    topXState.IsAvailable = true;
                     isBusy = false;
-                    isClicked = false;
+                    topXState.IsClicked = false;
                 }
             }
 
-            if (isAvailable)
+            if (topXState.IsAvailable)
             {
                 ImGui.Columns(3, "Top X pair of Roulette and Map", true);
                 ImGui.Text("Map");
@@ -99,6 +146,56 @@ public class AnalyzeWindow : Window, IDisposable
                     ImGui.Text(RouletteType ?? "Unknown");
                     ImGui.NextColumn();
                     ImGui.Text(Count.ToString());
+                    ImGui.NextColumn();
+                }
+                ImGui.Columns(1);
+            }
+        }
+
+        if (ImGui.CollapsingHeader("How much time for each roulette"))
+        {
+            if (ImGui.Button("Query"))
+            {
+                totalDurationState.IsClicked = true;
+                totalDurationState.IsAvailable = false;
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("Reset"))
+            {
+                totalDurationState.IsClicked = false;
+                totalDurationState.IsAvailable = false;
+                resultsTotalDurations.Clear();
+            }
+
+            if (totalDurationState.IsClicked)
+            {
+                if (isBusy)
+                {
+                    ImGui.Text("Processing...");
+                }
+                else
+                {
+                    isBusy = true;
+                    var durations = CalculateTotalDurations(Database.Entries);
+                    resultsTotalDurations = durations;
+                    totalDurationState.IsAvailable = true;
+                    isBusy = false;
+                    totalDurationState.IsClicked = false;
+                }
+            }
+
+            if (totalDurationState.IsAvailable)
+            {
+                ImGui.Columns(2, "How much time for each roulette", true);
+                ImGui.Text("Type");
+                ImGui.NextColumn();
+                ImGui.Text("Total");
+                ImGui.NextColumn();
+                foreach (var (RouletteType, TotalDuration) in resultsTotalDurations)
+                {
+                    ImGui.Text(RouletteType ?? "Unknown");
+                    ImGui.NextColumn();
+                    ImGui.Text(TotalDuration.ToString());
                     ImGui.NextColumn();
                 }
                 ImGui.Columns(1);

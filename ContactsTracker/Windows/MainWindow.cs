@@ -171,15 +171,18 @@ public class MainWindow : Window, IDisposable
         if (entry.partyMembers == null)
         {
             ImGui.SameLine();
-            ImGui.Text("Solo");
+            ImGui.Text("N/A");
         }
         else
         {
             // Separate by |
             var members = entry.partyMembers.Split('|');
+            if (members.Length > 1)
+                members = members.Take(members.Length - 1).ToArray();
             foreach (var member in members)
             {
-                ImGui.BulletText(member);
+                // Remove trailing space if any
+                ImGui.BulletText(member.Trim());
             }
         }
         ImGui.Spacing();
