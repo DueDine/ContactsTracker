@@ -1,4 +1,6 @@
 using System;
+using FFXIVClientStructs.FFXIV.Client.Game.Group;
+using Lumina.Excel.Sheets;
 
 namespace ContactsTracker;
 
@@ -29,7 +31,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
         Instance = _dataEntry;
     }
 
-    public static void finalize(Configuration configuration)
+    public unsafe static void finalize(Configuration configuration)
     {
         if (Instance == null)
         {
@@ -58,11 +60,17 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
 
         if (numOfParty > 1 && numOfParty <= 8) // TODO: Alliance Support
         {
+            var groupManager = GroupManager.Instance()->GetGroup();
             var names = new string[numOfParty];
             for (var i = 0; i < numOfParty; i++)
             {
                 var partyMember = Plugin.PartyList.CreatePartyMemberReference(Plugin.PartyList.GetPartyMemberAddress(i));
-                names[i] = (partyMember?.Name.ToString() + " @ " + partyMember?.World.Value.Name.ToString()) ?? "Unknown";
+                if (partyMember != null)
+                {
+                    var worldID = groupManager->GetPartyMemberByContentId((ulong)partyMember.ContentId)->HomeWorld;
+                    var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(worldID).Name.ToString();
+                    names[i] = partyMember.Name.ToString() + " @ " + worldName;
+                }
             }
             foreach (var name in names)
             {

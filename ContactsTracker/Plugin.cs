@@ -61,6 +61,7 @@ public sealed class Plugin : IDalamudPlugin
         ClientState.TerritoryChanged += OnTerritoryChanged;
         ClientState.CfPop += OnCfPop;
         ClientState.Logout += OnLogout;
+        DutyState.DutyStarted += OnDutyStarted;
         DutyState.DutyCompleted += OnDutyCompleted;
     }
 
@@ -75,6 +76,7 @@ public sealed class Plugin : IDalamudPlugin
         ClientState.TerritoryChanged -= OnTerritoryChanged;
         ClientState.CfPop -= OnCfPop;
         ClientState.Logout -= OnLogout;
+        DutyState.DutyStarted -= OnDutyStarted;
         DutyState.DutyCompleted -= OnDutyCompleted;
     }
 
@@ -215,6 +217,25 @@ public sealed class Plugin : IDalamudPlugin
 
     }
 
+    private void OnDutyStarted(object? sender, ushort territoryID)
+    {
+        if (Configuration.EnableLogging == false)
+        {
+            return;
+        }
+
+        Logger.Debug("Duty Started: " + territoryID);
+
+        if (DataEntry.Instance != null)
+        {
+            var territoryName = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(territoryID).ContentFinderCondition.Value.Name.ToString();
+            if (DataEntry.Instance.TerritoryName == territoryName)
+            {
+                DataEntry.Instance.beginAt = DateTime.Now.ToString("T"); // More accurate
+            }
+        }
+        return;
+    }
 
     private void OnDutyCompleted(object? sender, ushort territoryID)
     {

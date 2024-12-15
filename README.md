@@ -5,13 +5,21 @@ Keep a record of party members you ever meet. Just like the in-game Contacts but
 
 ## Overview
 
-![what](./assets/what.png)
+1. Active Logging Window
+
+![image-20241215132914601](./assets/image-20241215132914601.png)
+
+2. History Entry
+
+![image-20241215133055446](./assets/image-20241215133055446.png)
+
+3. Built-in Analyze
+
+![image-20241215133318312](./assets/image-20241215133318312.png)
 
 
 
 ## Todo
-- Try to Get Other Players' Home World & Real Level
 - Filter / Search by field
-- CSV Import
 - Map User -> CID
-- Built-in Analysis
+- Built-in Analysis (More query)
