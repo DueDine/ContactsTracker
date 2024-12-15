@@ -242,6 +242,18 @@ public class MainWindow : Window, IDisposable
                 ImGui.SetTooltip("Enable to start recording data.");
             }
 
+            var enableLogParty = Plugin.Configuration.EnableLogParty;
+            if (ImGui.Checkbox("Enable Log Party", ref enableLogParty))
+            {
+                Plugin.Configuration.EnableLogParty = enableLogParty;
+                Plugin.Configuration.Save();
+            }
+
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Enable to log party members on completion.");
+            }
+
             var recordSolo = Plugin.Configuration.RecordSolo;
             if (ImGui.Checkbox("Record Solo", ref recordSolo))
             {

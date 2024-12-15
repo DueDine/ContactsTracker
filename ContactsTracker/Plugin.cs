@@ -84,7 +84,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         if (command is CommandName)
         {
-            switch(args)
+            switch (args)
             {
                 case "analyze":
                     AnalyzeWindow.Toggle();

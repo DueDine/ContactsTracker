@@ -10,6 +10,8 @@ public class Configuration : IPluginConfiguration
 
     public bool EnableLogging { get; set; } = false;
 
+    public bool EnableLogParty { get; set; } = false;
+
     public bool RecordSolo { get; set; } = false;
 
     public bool PrintToChat { get; set; } = true;

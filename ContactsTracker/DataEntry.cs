@@ -1,6 +1,6 @@
-using System;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using Lumina.Excel.Sheets;
+using System;
 
 namespace ContactsTracker;
 
@@ -45,36 +45,43 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
         }
         Instance.endAt = DateTime.Now.ToString("T");
 
-        var numOfParty = Plugin.PartyList.Length;
-
-        if (numOfParty == 0)
+        if (configuration.EnableLogParty == false)
         {
-            if (configuration.RecordSolo == false)
-            {
-                Plugin.Logger.Debug("Solo record is disabled. Ignoring the record.");
-                Reset();
-                return;
-            }
-            Instance.partyMembers = "Solo";
+            Instance.partyMembers = "Party Logging Disabled";
         }
-
-        if (numOfParty > 1 && numOfParty <= 8) // TODO: Alliance Support
+        else
         {
-            var groupManager = GroupManager.Instance()->GetGroup();
-            var names = new string[numOfParty];
-            for (var i = 0; i < numOfParty; i++)
+            var numOfParty = Plugin.PartyList.Length;
+
+            if (numOfParty == 0)
             {
-                var partyMember = Plugin.PartyList.CreatePartyMemberReference(Plugin.PartyList.GetPartyMemberAddress(i));
-                if (partyMember != null)
+                if (configuration.RecordSolo == false)
                 {
-                    var worldID = groupManager->GetPartyMemberByContentId((ulong)partyMember.ContentId)->HomeWorld;
-                    var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(worldID).Name.ToString();
-                    names[i] = partyMember.Name.ToString() + " @ " + worldName;
+                    Plugin.Logger.Debug("Solo record is disabled. Ignoring the record.");
+                    Reset();
+                    return;
                 }
+                Instance.partyMembers = "Solo";
             }
-            foreach (var name in names)
+
+            if (numOfParty > 1 && numOfParty <= 8) // TODO: Alliance Support
             {
-                Instance.partyMembers += name + " | "; // Delimiter other than comma to avoid CSV confusion
+                var groupManager = GroupManager.Instance()->GetGroup();
+                var names = new string[numOfParty];
+                for (var i = 0; i < numOfParty; i++)
+                {
+                    var partyMember = Plugin.PartyList.CreatePartyMemberReference(Plugin.PartyList.GetPartyMemberAddress(i));
+                    if (partyMember != null)
+                    {
+                        var worldID = groupManager->GetPartyMemberByContentId((ulong)partyMember.ContentId)->HomeWorld;
+                        var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(worldID).Name.ToString();
+                        names[i] = partyMember.Name.ToString() + " @ " + worldName;
+                    }
+                }
+                foreach (var name in names)
+                {
+                    Instance.partyMembers += name + " | "; // Delimiter other than comma to avoid CSV confusion
+                }
             }
         }
 

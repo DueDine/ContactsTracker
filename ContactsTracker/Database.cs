@@ -140,7 +140,7 @@ public class Database
                     endAt = endAt,
                     jobName = jobName,
                     partyMembers = partyMembers,
-                    comment = comment! 
+                    comment = comment!
                 };
                 importedEntries.Add(entry);
             }
