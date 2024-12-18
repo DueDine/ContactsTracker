@@ -45,7 +45,7 @@ public class AnalyzeWindow : Window, IDisposable
                     {
                         if (TimeSpan.TryParse(entry.beginAt, out var beginAt) && TimeSpan.TryParse(entry.endAt, out var endAt))
                         {
-                            if (endAt < beginAt)
+                            if (endAt < beginAt) // If the roulette ends on the next day
                             {
                                 endAt = endAt.Add(TimeSpan.FromDays(1));
                             }
@@ -80,7 +80,6 @@ public class AnalyzeWindow : Window, IDisposable
 
     public override void Draw()
     {
-        // ImGui.Text("Some query will take a while to complete, please be patient.");
         ImGui.Text("If you have a suggestion for a new query, please let me know.");
 
         if (ImGui.CollapsingHeader("Top X pair of Roulette and Map"))
@@ -93,13 +92,13 @@ public class AnalyzeWindow : Window, IDisposable
                 topXState.IsClicked = false;
             }
             ImGui.SameLine();
-            if (ImGui.Button("Query"))
+            if (ImGui.Button("Query##Q1"))
             {
                 topXState.IsClicked = true;
                 topXState.IsAvailable = false;
             }
             ImGui.SameLine();
-            if (ImGui.Button("Reset"))
+            if (ImGui.Button("Reset##R1"))
             {
                 topX = 0;
                 topXState.IsClicked = false;
@@ -153,13 +152,13 @@ public class AnalyzeWindow : Window, IDisposable
 
         if (ImGui.CollapsingHeader("How much time for each roulette"))
         {
-            if (ImGui.Button("Query"))
+            if (ImGui.Button("Query##Q2"))
             {
                 totalDurationState.IsClicked = true;
                 totalDurationState.IsAvailable = false;
             }
             ImGui.SameLine();
-            if (ImGui.Button("Reset"))
+            if (ImGui.Button("Reset##R2"))
             {
                 totalDurationState.IsClicked = false;
                 totalDurationState.IsAvailable = false;

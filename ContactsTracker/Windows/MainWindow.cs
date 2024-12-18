@@ -10,9 +10,11 @@ public class MainWindow : Window, IDisposable
 {
     private Plugin Plugin;
     private int selectedTab = 0;
-    private string commentBuffer = string.Empty;
+    // private string commentBuffer = string.Empty;
     private bool isFileDialogOpen = false;
     private bool doubleCheck = false;
+    private bool enableSearch = false;
+    private string searchBuffer = string.Empty;
 
     public MainWindow(Plugin plugin)
         : base("Contacts Tracker", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
@@ -125,14 +127,49 @@ public class MainWindow : Window, IDisposable
 
     }
 
-    // TODO: Filter / Search by any field
     private void DrawHistoryTab()
     {
-
         var entries = Database.Entries;
+
+        if (ImGui.Button("Enable / Disable Search Feature"))
+        {
+            enableSearch = !enableSearch;
+        }
+
+        if (enableSearch)
+        {
+            ImGui.Spacing();
+            if (ImGui.InputText("Search", ref searchBuffer, 50))
+            {
+                selectedTab = 0; // Avoid out of range
+            }
+            ImGui.Spacing();
+            if (!string.IsNullOrEmpty(searchBuffer))
+            {
+                entries = entries
+                .Where(entry =>
+                    (entry.TerritoryName?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (entry.RouletteType?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (entry.Date?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (entry.beginAt?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (entry.endAt?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (entry.jobName?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (entry.partyMembers?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (entry.comment?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false)
+            ).ToList();
+            }
+        }
+
         if (entries.Count == 0)
         {
-            ImGui.Text("No record yet.");
+            if (enableSearch)
+            {
+                ImGui.Text("No record found.");
+            }
+            else
+            {
+                ImGui.Text("No record yet.");
+            }
             return;
         }
 
