@@ -1,9 +1,11 @@
 using Dalamud.Interface.Windowing;
+using Dalamud.Interface.Utility;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Interface.Utility.Raii;
 
 namespace ContactsTracker.Windows;
 
@@ -17,8 +19,8 @@ public class AnalyzeWindow : Window, IDisposable
 {
     private Plugin Plugin;
 
-    private QueryState topXState = new();
-    private QueryState totalDurationState = new();
+    private readonly QueryState topXState = new();
+    private readonly QueryState totalDurationState = new();
 
     private bool isBusy = false;
     private int topX = 0;
@@ -80,7 +82,8 @@ public class AnalyzeWindow : Window, IDisposable
 
     public override void Draw()
     {
-        ImGui.Text("If you have a suggestion for a new query, please let me know.");
+        ImGuiHelpers.SafeTextWrapped("If you have a suggestion for a new query, please let me know.");
+        ImGuiHelpers.ScaledDummy(5f);
 
         if (ImGui.CollapsingHeader("Top X pair of Roulette and Map"))
         {
@@ -100,7 +103,6 @@ public class AnalyzeWindow : Window, IDisposable
             ImGui.SameLine();
             if (ImGui.Button("Reset##R1"))
             {
-                topX = 0;
                 topXState.IsClicked = false;
                 topXState.IsAvailable = false;
                 resultsExtractOccurrences.Clear();
@@ -110,7 +112,7 @@ public class AnalyzeWindow : Window, IDisposable
             {
                 if (isBusy)
                 {
-                    ImGui.Text("Processing...");
+                    ImGuiHelpers.SafeTextWrapped("Processing...");
                 }
                 else
                 {
@@ -130,23 +132,33 @@ public class AnalyzeWindow : Window, IDisposable
 
             if (topXState.IsAvailable)
             {
-                ImGui.Columns(3, "Top X pair of Roulette and Map", true);
-                ImGui.Text("Map");
-                ImGui.NextColumn();
-                ImGui.Text("Roulette");
-                ImGui.NextColumn();
-                ImGui.Text("Times");
-                ImGui.NextColumn();
-                foreach (var (TerritoryName, RouletteType, Count) in resultsExtractOccurrences)
+                if (resultsExtractOccurrences.Count == 0)
                 {
-                    ImGui.Text(TerritoryName ?? "Unknown");
-                    ImGui.NextColumn();
-                    ImGui.Text(RouletteType ?? "Unknown");
-                    ImGui.NextColumn();
-                    ImGui.Text(Count.ToString());
-                    ImGui.NextColumn();
+                    ImGuiHelpers.SafeTextWrapped("No data available.");
                 }
-                ImGui.Columns(1);
+                else
+                {
+                    using var table = ImRaii.Table("##ExtractOccurrences", 3);
+                    if (!table) return;
+
+                    ImGui.TableNextColumn();
+                    ImGui.TableHeader("Map");
+                    ImGui.TableNextColumn();
+                    ImGui.TableHeader("Roulette");
+                    ImGui.TableNextColumn();
+                    ImGui.TableHeader("Times");
+
+                    foreach (var (TerritoryName, RouletteType, Count) in resultsExtractOccurrences)
+                    {
+                        ImGui.TableNextRow();
+                        ImGui.TableNextColumn();
+                        ImGuiHelpers.SafeTextWrapped(TerritoryName ?? "Unknown");
+                        ImGui.TableNextColumn();
+                        ImGuiHelpers.SafeTextWrapped(RouletteType ?? "Unknown");
+                        ImGui.TableNextColumn();
+                        ImGuiHelpers.SafeTextWrapped(Count.ToString());
+                    }
+                }
             }
         }
 
@@ -169,12 +181,13 @@ public class AnalyzeWindow : Window, IDisposable
             {
                 if (isBusy)
                 {
-                    ImGui.Text("Processing...");
+                    ImGuiHelpers.SafeTextWrapped("Processing...");
                 }
                 else
                 {
                     isBusy = true;
                     var durations = CalculateTotalDurations(Database.Entries);
+                    durations.Sort((a, b) => b.TotalDuration.CompareTo(a.TotalDuration));
                     resultsTotalDurations = durations;
                     totalDurationState.IsAvailable = true;
                     isBusy = false;
@@ -184,19 +197,29 @@ public class AnalyzeWindow : Window, IDisposable
 
             if (totalDurationState.IsAvailable)
             {
-                ImGui.Columns(2, "How much time for each roulette", true);
-                ImGui.Text("Type");
-                ImGui.NextColumn();
-                ImGui.Text("Total");
-                ImGui.NextColumn();
-                foreach (var (RouletteType, TotalDuration) in resultsTotalDurations)
+                if (resultsTotalDurations.Count == 0)
                 {
-                    ImGui.Text(RouletteType ?? "Unknown");
-                    ImGui.NextColumn();
-                    ImGui.Text(TotalDuration.ToString());
-                    ImGui.NextColumn();
+                    ImGuiHelpers.SafeTextWrapped("No data available.");
                 }
-                ImGui.Columns(1);
+                else
+                {
+                    using var table = ImRaii.Table("##TotalDurations", 2);
+                    if (!table) return;
+
+                    ImGui.TableNextColumn();
+                    ImGui.TableHeader("Type");
+                    ImGui.TableNextColumn();
+                    ImGui.TableHeader("Total");
+
+                    foreach (var (RouletteType, TotalDuration) in resultsTotalDurations)
+                    {
+                        ImGui.TableNextRow();
+                        ImGui.TableNextColumn();
+                        ImGuiHelpers.SafeTextWrapped(RouletteType ?? "Unknown");
+                        ImGui.TableNextColumn();
+                        ImGuiHelpers.SafeTextWrapped(TotalDuration.ToString());
+                    }
+                }
             }
         }
     }

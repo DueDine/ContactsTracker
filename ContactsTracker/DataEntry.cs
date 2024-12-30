@@ -31,7 +31,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
         Instance = _dataEntry;
     }
 
-    public unsafe static void finalize(Configuration configuration)
+    public static unsafe void finalize(Configuration configuration)
     {
         if (Instance == null)
         {

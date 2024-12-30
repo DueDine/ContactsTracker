@@ -1,4 +1,5 @@
 using Dalamud.Interface.Windowing;
+using Dalamud.Interface.Utility;
 using ImGuiNET;
 using System;
 using System.Linq;
@@ -57,14 +58,14 @@ public class MainWindow : Window, IDisposable
     {
         if (Plugin.Configuration.EnableLogging == false)
         {
-            ImGui.Text("Logging Disabled. Read-Only Mode.");
+            ImGuiHelpers.SafeTextWrapped("Logging Disabled. Read-Only Mode.");
             ImGui.Spacing();
         }
 
         var entries = Database.Entries;
         if (entries.Count == 0 && DataEntry.Instance == null)
         {
-            ImGui.Text("No record yet.");
+            ImGuiHelpers.SafeTextWrapped("No record yet.");
             return;
         }
 
@@ -72,35 +73,35 @@ public class MainWindow : Window, IDisposable
         if (DataEntry.Instance != null && !string.IsNullOrEmpty(DataEntry.Instance.TerritoryName))
         {
             entry = DataEntry.Instance;
-            ImGui.Text("Currently Logging");
+            ImGuiHelpers.SafeTextWrapped("Currently Logging");
         }
         else
         {
-            ImGui.Text("No Active Log. Please check the History Tab.");
+            ImGuiHelpers.SafeTextWrapped("No Active Log. Please check the History Tab.");
             return;
         }
         ImGui.Spacing();
-        ImGui.Text($"Place: {entry.TerritoryName}");
+        ImGuiHelpers.SafeTextWrapped($"Place: {entry.TerritoryName}");
         ImGui.Spacing();
-        ImGui.Text($"Join via: {(string.IsNullOrEmpty(entry.RouletteType) ? "Normal" : entry.RouletteType)}");
+        ImGuiHelpers.SafeTextWrapped($"Join via: {(string.IsNullOrEmpty(entry.RouletteType) ? "Normal" : entry.RouletteType)}");
         ImGui.Spacing();
-        ImGui.Text($"When: {entry.Date}");
+        ImGuiHelpers.SafeTextWrapped($"When: {entry.Date}");
         ImGui.SameLine();
-        ImGui.Text($"{entry.beginAt} - {(string.IsNullOrEmpty(entry.endAt) ? "N/A" : entry.endAt)}");
+        ImGuiHelpers.SafeTextWrapped($"{entry.beginAt} - {(string.IsNullOrEmpty(entry.endAt) ? "N/A" : entry.endAt)}");
         if (!string.IsNullOrEmpty(entry.endAt))
         {
             ImGui.Spacing();
-            ImGui.Text($"Duration: {DateTime.Parse(entry.endAt).Subtract(DateTime.Parse(entry.beginAt)):hh\\:mm\\:ss}");
+            ImGuiHelpers.SafeTextWrapped($"Duration: {DateTime.Parse(entry.endAt).Subtract(DateTime.Parse(entry.beginAt)):hh\\:mm\\:ss}");
         }
         else if (Plugin.DutyState.IsDutyStarted) // Still in progress
         {
             ImGui.Spacing();
-            ImGui.Text($"Duration: {DateTime.Now.Subtract(DateTime.Parse(entry.beginAt)):hh\\:mm\\:ss}");
+            ImGuiHelpers.SafeTextWrapped($"Duration: {DateTime.Now.Subtract(DateTime.Parse(entry.beginAt)):hh\\:mm\\:ss}");
         }
         else
         {
             ImGui.Spacing();
-            ImGui.Text("If you just reconnect, duration will not display here.");
+            ImGuiHelpers.SafeTextWrapped("If you just reconnect, duration will not display here.");
         }
         ImGui.Spacing();
 
@@ -164,11 +165,11 @@ public class MainWindow : Window, IDisposable
         {
             if (enableSearch)
             {
-                ImGui.Text("No record found.");
+                ImGuiHelpers.SafeTextWrapped("No record found.");
             }
             else
             {
-                ImGui.Text("No record yet.");
+                ImGuiHelpers.SafeTextWrapped("No record yet.");
             }
             return;
         }
@@ -191,24 +192,24 @@ public class MainWindow : Window, IDisposable
         }
 
         var entry = entries[selectedTab];
-        ImGui.Text($"Name: {entry.TerritoryName}");
+        ImGuiHelpers.SafeTextWrapped($"Name: {entry.TerritoryName}");
         ImGui.Spacing();
-        ImGui.Text($"Type: {(string.IsNullOrEmpty(entry.RouletteType) ? "Normal" : entry.RouletteType)}");
+        ImGuiHelpers.SafeTextWrapped($"Type: {(string.IsNullOrEmpty(entry.RouletteType) ? "Normal" : entry.RouletteType)}");
         ImGui.Spacing();
-        ImGui.Text($"Completed?: {(entry.IsCompleted ? "Yes" : "No")}");
+        ImGuiHelpers.SafeTextWrapped($"Completed?: {(entry.IsCompleted ? "Yes" : "No")}");
         ImGui.Spacing();
-        ImGui.Text($"Date: {entry.Date}");
+        ImGuiHelpers.SafeTextWrapped($"Date: {entry.Date}");
         ImGui.Spacing();
-        ImGui.Text($"Time: {entry.beginAt} - {(string.IsNullOrEmpty(entry.endAt) ? "N/A" : entry.endAt)}");
+        ImGuiHelpers.SafeTextWrapped($"Time: {entry.beginAt} - {(string.IsNullOrEmpty(entry.endAt) ? "N/A" : entry.endAt)}");
         ImGui.Spacing();
-        ImGui.Text($"Job: {entry.jobName}");
+        ImGuiHelpers.SafeTextWrapped($"Job: {entry.jobName}");
         ImGui.Spacing();
 
-        ImGui.Text("Party Members:");
+        ImGuiHelpers.SafeTextWrapped("Party Members:");
         if (entry.partyMembers == null)
         {
             ImGui.SameLine();
-            ImGui.Text("N/A");
+            ImGuiHelpers.SafeTextWrapped("N/A");
         }
         else
         {
@@ -242,7 +243,7 @@ public class MainWindow : Window, IDisposable
 
         if (ImGui.BeginPopupModal("Confirm Deletion"))
         {
-            ImGui.Text("Are you sure you want to delete this entry?");
+            ImGuiHelpers.SafeTextWrapped("Are you sure you want to delete this entry?");
             ImGui.Separator();
 
             if (ImGui.Button("Yes"))
@@ -416,7 +417,7 @@ public class MainWindow : Window, IDisposable
 
                 if (ImGui.BeginPopupModal("Confirm Delete ALL"))
                 {
-                    ImGui.Text("Are you sure you want to delete ALL? This action is irreversible.");
+                    ImGuiHelpers.SafeTextWrapped("Are you sure you want to delete ALL? This action is irreversible.");
                     ImGui.Separator();
 
                     if (ImGui.Button("Yes"))
