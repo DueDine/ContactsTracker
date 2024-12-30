@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Dalamud.NET.SDK/11.0.0">
+<Project Sdk="Dalamud.NET.SDK/11.2.0">
 
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <Version>0.1.0.0</Version>
+    <Version>0.1.0.1</Version>
     <Description>Help you remember previous contacts.</Description>
     <PackageProjectUrl>https://github.com/DueDine/ContactsTracker</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>

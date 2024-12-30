@@ -8,15 +8,15 @@ public class Configuration : IPluginConfiguration
 {
     public int Version { get; set; } = 0;
 
-    public bool EnableLogging { get; set; } = false;
+    public bool EnableLogging { get; set; } = true;
 
     public bool EnableLogParty { get; set; } = false;
 
     public bool RecordSolo { get; set; } = false;
 
-    public bool PrintToChat { get; set; } = true;
+    public bool PrintToChat { get; set; } = false;
 
-    public bool OnlyDutyRoulette { get; set; } = false;
+    public bool OnlyDutyRoulette { get; set; } = true;
 
     public bool KeepIncompleteEntry { get; set; } = true;
 
@@ -24,7 +24,7 @@ public class Configuration : IPluginConfiguration
 
     public int ArchiveWhenEntriesExceed { get; set; } = -1; // -1 means no limit
 
-    public int ArchiveKeepEntries { get; set; } = 5; // Remove oldest ArchiveWhenEntriesExceed - ArchiveKeepEntries entries
+    public int ArchiveKeepEntries { get; set; } = 100; // Remove oldest ArchiveWhenEntriesExceed - ArchiveKeepEntries entries
 
     public bool EnableDeleteAll { get; set; } = false; // Dangerous. Disabled by default.
 

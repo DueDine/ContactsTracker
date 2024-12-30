@@ -44,7 +44,7 @@ public class Database
         }
         else
         {
-            Plugin.Logger.Debug("Failed to load data.json!");
+            Plugin.Logger.Verbose("Failed to load data.json!");
         }
     }
 
@@ -59,13 +59,10 @@ public class Database
         var content = File.ReadAllText(tempPath);
         if (content != null)
         {
-            // File.Delete(tempPath); // Remove temp file
-            Plugin.Logger.Debug("Recover previous entry");
             return JsonConvert.DeserializeObject<DataEntry>(content);
         }
         else
         {
-            Plugin.Logger.Debug("Failed to load temp.json!");
             return null;
         }
     }
@@ -83,12 +80,10 @@ public class Database
         var records = JsonConvert.DeserializeObject<List<DataEntry>>(File.ReadAllText(dataPath));
         if (records == null)
         {
-            Plugin.Logger.Debug("Failed to export data.json!");
             return;
         }
         else if (records.Count == 0)
         {
-            Plugin.Logger.Debug("No records to export.");
             return;
         }
         else
@@ -106,7 +101,6 @@ public class Database
     {
         if (!File.Exists(filePath))
         {
-            Plugin.Logger.Debug("File not found.");
             return false;
         }
 
@@ -150,13 +144,11 @@ public class Database
                 InsertEntry(entry);
             }
             Save();
-            Plugin.Logger.Debug($"Imported {importedEntries.Count} entries successfully.");
             return true;
         }
         catch (Exception e)
         {
-            Plugin.Logger.Debug("Failed to import.");
-            Plugin.Logger.Debug(e.Message);
+            Plugin.Logger.Verbose(e.Message);
             return false;
         }
     }
@@ -165,13 +157,11 @@ public class Database
     {
         if (configuration.ArchiveWhenEntriesExceed == -1)
         {
-            Plugin.Logger.Debug("ArchiveWhenEntriesExceed is -1, skipping archive.");
             return;
         }
 
         if (Entries.Count < configuration.ArchiveWhenEntriesExceed)
         {
-            Plugin.Logger.Debug("Entries count is less than ArchiveWhenEntriesExceed, skipping archive.");
             return;
         }
 
@@ -181,12 +171,10 @@ public class Database
 
         if (records == null)
         {
-            Plugin.Logger.Debug("Failed to archive data.json!");
             return;
         }
         else if (records.Count == 0)
         {
-            Plugin.Logger.Debug("No records to archive.");
             return;
         }
         else
@@ -196,8 +184,6 @@ public class Database
             csv.WriteRecords(records);
         }
 
-        Plugin.ChatGui.Print($"Archived to {archivePath}");
-
         if (File.Exists(archivePath)) // Then keep newest ArchiveKeepEntries entries
         {
             var recordsToKeep = records.Skip(records.Count - configuration.ArchiveKeepEntries).ToList();
@@ -206,7 +192,7 @@ public class Database
         }
         else
         {
-            Plugin.Logger.Debug("Failed to archive data.json!");
+            Plugin.Logger.Verbose("Failed to archive.");
         }
 
     }

@@ -54,10 +54,6 @@ public sealed class Plugin : IDalamudPlugin
 
         Database.Load();
 
-        //
-        // Logger.Debug($"Info: {ClientState.LocalContentId}"); TODO: Character -> CID Mapping
-        //
-
         ClientState.TerritoryChanged += OnTerritoryChanged;
         ClientState.CfPop += OnCfPop;
         ClientState.Logout += OnLogout;
@@ -99,36 +95,10 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
-    /*
-    private void OnLogon()
-    {
-        if (DutyState.IsDutyStarted && ClientState.IsLoggedIn)
-        {
-            Logger.Debug("User reconnected. Prepare to recover.");
-            var territoryName = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(ClientState.TerritoryType).ContentFinderCondition.Value.Name.ToString();
-            if (!string.IsNullOrEmpty(territoryName))
-            {
-                Logger.Debug("Try to recover previous entry");
-                var entry = Database.LoadFromTempPath();
-                if (entry != null && entry.TerritoryName == territoryName)
-                {
-                    Logger.Debug("Recovered");
-                    DataEntry.Initialize(entry);
-                }
-                else
-                {
-                    Logger.Debug("TerritoryName mismatch. Ignore it.");
-                }
-            }
-        }
-    }
-    */
-
     private void OnLogout(int type, int code)
     {
         if (DataEntry.Instance != null && DataEntry.Instance.IsCompleted == false && !string.IsNullOrEmpty(DataEntry.Instance.TerritoryName))
         {
-            Logger.Debug("User disconnected. Saving the record.");
             Database.SaveInProgressEntry(DataEntry.Instance);
         }
     }
@@ -145,27 +115,21 @@ public sealed class Plugin : IDalamudPlugin
 
         if (Database.isDirty)
         {
-            Logger.Debug("User reconnected. Prepare to recover.");
             if (!string.IsNullOrEmpty(territoryName))
             {
-                Logger.Debug("Try to recover previous entry");
                 var entry = Database.LoadFromTempPath();
                 if (entry != null && entry.TerritoryName == territoryName)
                 {
-                    Logger.Debug("Recovered");
                     DataEntry.Initialize(entry);
                 }
                 else
                 {
-                    Logger.Debug("TerritoryName mismatch. Ignore it.");
+                    // ignore
                 }
                 Database.isDirty = false; // False whatever the result
             }
             return;
         }
-
-        Logger.Debug("Territory Changed");
-        Logger.Debug("New Territory: " + (string.IsNullOrEmpty(territoryName) ? "Non Battle Area" : territoryName));
 
         if (DataEntry.Instance == null)
         {
@@ -173,15 +137,12 @@ public sealed class Plugin : IDalamudPlugin
             {
                 if (Configuration.OnlyDutyRoulette) // If DR, already initialized by CFPop
                 {
-                    Logger.Debug("Duty Roulette Only Mode. No New Entry.");
                     return;
                 }
-                Logger.Debug("New Entry");
                 DataEntry.Initialize(null, null, false);
             }
             else
             {
-                Logger.Debug("Non Battle Area -> No New Entry.");
                 return;
             }
         }
@@ -198,19 +159,15 @@ public sealed class Plugin : IDalamudPlugin
         }
         else if (DataEntry.Instance.TerritoryName == territoryName) // Intened to handle rejoin. 
         {
-            Logger.Debug("Territory Unchanged: " + territoryName);
         }
         else
         {
-            Logger.Debug("Territory Changed: " + DataEntry.Instance.TerritoryName + " -> " + (string.IsNullOrEmpty(territoryName) ? "Non Battle Area" : territoryName));
-            Logger.Debug("Force Finalizing Previous Entry");
             if (Configuration.KeepIncompleteEntry)
             {
                 DataEntry.finalize(Configuration);
             }
             else
             {
-                Logger.Debug("Do not keep Incomplete. Ignore this.");
                 DataEntry.Reset();
             }
         }
@@ -224,7 +181,6 @@ public sealed class Plugin : IDalamudPlugin
             return;
         }
 
-        Logger.Debug("Duty Started: " + territoryID);
 
         if (DataEntry.Instance != null)
         {
@@ -244,7 +200,6 @@ public sealed class Plugin : IDalamudPlugin
             return;
         }
 
-        Logger.Debug("Duty Completed: " + territoryID);
 
         if (DataEntry.Instance == null)
         {
@@ -272,22 +227,18 @@ public sealed class Plugin : IDalamudPlugin
             return;
         }
 
-        Logger.Debug("Finder Pop");
 
         var queueInfo = ContentsFinder.Instance()->QueueInfo;
         if (queueInfo.PoppedContentType == ContentsFinderQueueInfo.PoppedContentTypes.Roulette)
         {
-            Logger.Debug("Roulette Mode");
             var type = DataManager.GetExcelSheet<ContentRoulette>()?.GetRow(queueInfo.PoppedContentId).Name.ToString();
             DataEntry.Reset(); // Reset. Some may choose to abandon the roulette
             DataEntry.Initialize(null, type, false);
-            Logger.Debug("Roulette Type: " + type);
         }
         else
         {
-            Logger.Debug("Non Roulette Mode");
             DataEntry.Reset(); // Handle case where user DR -> Abandon -> Non DR vice versa
-            DataEntry.Initialize(null, "Normal", false);
+            // DataEntry.Initialize(null, "Normal", false);
         }
     }
 

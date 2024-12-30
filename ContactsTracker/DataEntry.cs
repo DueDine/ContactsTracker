@@ -57,7 +57,6 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
             {
                 if (configuration.RecordSolo == false)
                 {
-                    Plugin.Logger.Debug("Solo record is disabled. Ignoring the record.");
                     Reset();
                     return;
                 }
