@@ -59,7 +59,7 @@ public class MainWindow : Window, IDisposable
         if (Plugin.Configuration.EnableLogging == false)
         {
             ImGuiHelpers.SafeTextWrapped("Logging Disabled. Read-Only Mode.");
-            ImGui.Spacing();
+            return;
         }
 
         var entries = Database.Entries;
@@ -75,11 +75,16 @@ public class MainWindow : Window, IDisposable
             entry = DataEntry.Instance;
             ImGuiHelpers.SafeTextWrapped("Currently Logging");
         }
+        else if (entry != default)
+        {
+            ImGuiHelpers.SafeTextWrapped("No Active Log. Display Last Entry Instead.");
+        }
         else
         {
-            ImGuiHelpers.SafeTextWrapped("No Active Log. Please check the History Tab.");
+            ImGuiHelpers.SafeTextWrapped("No Active Log.");
             return;
         }
+
         ImGui.Spacing();
         ImGuiHelpers.SafeTextWrapped($"Place: {entry.TerritoryName}");
         ImGui.Spacing();
@@ -88,6 +93,7 @@ public class MainWindow : Window, IDisposable
         ImGuiHelpers.SafeTextWrapped($"When: {entry.Date}");
         ImGui.SameLine();
         ImGuiHelpers.SafeTextWrapped($"{entry.beginAt} - {(string.IsNullOrEmpty(entry.endAt) ? "N/A" : entry.endAt)}");
+
         if (!string.IsNullOrEmpty(entry.endAt))
         {
             ImGui.Spacing();

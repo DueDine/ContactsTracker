@@ -28,6 +28,7 @@ public class AnalyzeWindow : Window, IDisposable
     private static List<(string? TerritoryName, string? RouletteType, int Count)> ExtractOccurrences(List<DataEntry> Entries)
     {
         return Entries
+            .Where(entry => entry.IsCompleted)
             .GroupBy(Entries => (Entries.TerritoryName, Entries.RouletteType))
             .Select(group => (group.Key.TerritoryName, group.Key.RouletteType, group.Count()))
             .ToList();
@@ -35,14 +36,14 @@ public class AnalyzeWindow : Window, IDisposable
 
     private List<(string? TerritoryName, string? RouletteType, int Count)> resultsExtractOccurrences = [];
 
-    private static List<(string? RouletteType, TimeSpan TotalDuration)> CalculateTotalDurations(List<DataEntry> Entries)
+    private static List<(string? RouletteType, TimeSpan TotalDuration, TimeSpan AverageDuration)> CalculateTotalDurations(List<DataEntry> Entries)
     {
         return Entries
             .Where(entry => entry.IsCompleted && entry.endAt != null)
             .GroupBy(entry => entry.RouletteType)
             .Select(group =>
             {
-                var totalDuration = group
+                var validDurations = group
                     .Select(entry =>
                     {
                         if (TimeSpan.TryParse(entry.beginAt, out var beginAt) && TimeSpan.TryParse(entry.endAt, out var endAt))
@@ -57,14 +58,20 @@ public class AnalyzeWindow : Window, IDisposable
 
                         return TimeSpan.Zero;
                     })
-                    .Aggregate(TimeSpan.Zero, (sum, duration) => sum + duration);
+                    .Where(duration => duration > TimeSpan.Zero)
+                    .ToList();
 
-                return (RouletteType: group.Key, TotalDuration: totalDuration);
+                var totalDuration = validDurations.Aggregate(TimeSpan.Zero, (sum, duration) => sum + duration);
+                var averageDuration = validDurations.Count > 0
+                    ? TimeSpan.FromTicks(validDurations.Sum(d => d.Ticks) / validDurations.Count)
+                    : TimeSpan.Zero;
+
+                return (RouletteType: group.Key, TotalDuration: totalDuration, AverageDuration: averageDuration);
             })
             .ToList();
     }
 
-    private List<(string? RouletteType, TimeSpan TotalDuration)> resultsTotalDurations = [];
+    private List<(string? RouletteType, TimeSpan TotalDuration, TimeSpan AverageDuration)> resultsTotalDurations = [];
 
     public AnalyzeWindow(Plugin plugin)
     : base("Analyze - Still developing", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
@@ -117,7 +124,7 @@ public class AnalyzeWindow : Window, IDisposable
                 else
                 {
                     isBusy = true;
-                    var occurrences = ExtractOccurrences(Database.Entries.Where(entry => entry.IsCompleted).ToList());
+                    var occurrences = ExtractOccurrences(Database.Entries);
                     occurrences.Sort((a, b) => b.Count.CompareTo(a.Count));
                     if (topX >= 1)
                     {
@@ -203,21 +210,25 @@ public class AnalyzeWindow : Window, IDisposable
                 }
                 else
                 {
-                    using var table = ImRaii.Table("##TotalDurations", 2);
+                    using var table = ImRaii.Table("##TotalDurations", 3);
                     if (!table) return;
 
                     ImGui.TableNextColumn();
                     ImGui.TableHeader("Type");
                     ImGui.TableNextColumn();
                     ImGui.TableHeader("Total");
+                    ImGui.TableNextColumn();
+                    ImGui.TableHeader("Average");
 
-                    foreach (var (RouletteType, TotalDuration) in resultsTotalDurations)
+                    foreach (var (RouletteType, TotalDuration, AverageDuration) in resultsTotalDurations)
                     {
                         ImGui.TableNextRow();
                         ImGui.TableNextColumn();
                         ImGuiHelpers.SafeTextWrapped(RouletteType ?? "Unknown");
                         ImGui.TableNextColumn();
                         ImGuiHelpers.SafeTextWrapped(TotalDuration.ToString());
+                        ImGui.TableNextColumn();
+                        ImGuiHelpers.SafeTextWrapped(AverageDuration.ToString());
                     }
                 }
             }
