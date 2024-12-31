@@ -41,7 +41,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
         var localPlayer = Plugin.ClientState.LocalPlayer;
         if (localPlayer != null)
         {
-            Instance.jobName = Plugin.UpperFirst(localPlayer.ClassJob.Value.Name.ToString());
+            Instance.jobName = Plugin.UpperFirst(localPlayer.ClassJob.Value.Name.ExtractText());
         }
         Instance.endAt = DateTime.Now.ToString("T");
 
@@ -73,7 +73,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
                     if (partyMember != null)
                     {
                         var worldID = groupManager->GetPartyMemberByContentId((ulong)partyMember.ContentId)->HomeWorld;
-                        var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(worldID).Name.ToString();
+                        var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(worldID).Name.ExtractText();
                         names[i] = partyMember.Name.ToString() + " @ " + worldName;
                     }
                 }

@@ -44,7 +44,9 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Open Plugin\n/ctracker analyze -> AnalyzeWindow\n/ctracker reload -> Reload Database"
+            HelpMessage = "Open Plugin\n" +
+                          "/ctracker analyze -> AnalyzeWindow\n" +
+                          "/ctracker reload -> Reload Database"
         });
 
         PluginInterface.UiBuilder.Draw += DrawUI;
@@ -111,7 +113,7 @@ public sealed class Plugin : IDalamudPlugin
         }
 
         var newTerritory = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(territoryID).ContentFinderCondition.Value;
-        var territoryName = newTerritory?.Name.ToString();
+        var territoryName = newTerritory?.Name.ExtractText();
 
         if (Database.isDirty)
         {
@@ -154,7 +156,7 @@ public sealed class Plugin : IDalamudPlugin
             var localPlayer = ClientState.LocalPlayer;
             if (localPlayer != null) // Seems like Player available after TerritoryChanged. Have to rely OnDutyCompleted.
             {
-                DataEntry.Instance.jobName = UpperFirst(localPlayer.ClassJob.Value.Name.ToString());
+                DataEntry.Instance.jobName = UpperFirst(localPlayer.ClassJob.Value.Name.ExtractText());
             }
         }
         else if (DataEntry.Instance.TerritoryName == territoryName) // Intened to handle rejoin. 
@@ -184,7 +186,7 @@ public sealed class Plugin : IDalamudPlugin
 
         if (DataEntry.Instance != null)
         {
-            var territoryName = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(territoryID).ContentFinderCondition.Value.Name.ToString();
+            var territoryName = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(territoryID).ContentFinderCondition.Value.Name.ExtractText();
             if (DataEntry.Instance.TerritoryName == territoryName)
             {
                 DataEntry.Instance.beginAt = DateTime.Now.ToString("T"); // More accurate
@@ -231,7 +233,7 @@ public sealed class Plugin : IDalamudPlugin
         var queueInfo = ContentsFinder.Instance()->QueueInfo;
         if (queueInfo.PoppedContentType == ContentsFinderQueueInfo.PoppedContentTypes.Roulette)
         {
-            var type = DataManager.GetExcelSheet<ContentRoulette>()?.GetRow(queueInfo.PoppedContentId).Name.ToString();
+            var type = DataManager.GetExcelSheet<ContentRoulette>()?.GetRow(queueInfo.PoppedContentId).Name.ExtractText();
             DataEntry.Reset(); // Reset. Some may choose to abandon the roulette
             DataEntry.Initialize(null, type, false);
         }
