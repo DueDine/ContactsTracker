@@ -228,7 +228,7 @@ public class AnalyzeWindow : Window, IDisposable
                         ImGui.TableNextColumn();
                         ImGuiHelpers.SafeTextWrapped(TotalDuration.ToString());
                         ImGui.TableNextColumn();
-                        ImGuiHelpers.SafeTextWrapped(AverageDuration.ToString());
+                        ImGuiHelpers.SafeTextWrapped(AverageDuration.ToString("hh\\:mm\\:ss"));
                     }
                 }
             }
