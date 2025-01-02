@@ -1,5 +1,6 @@
-using Dalamud.Interface.Windowing;
 using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
+using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using System;
 using System.Linq;
@@ -104,85 +105,88 @@ public class MainWindow : Window, IDisposable
             ImGui.Spacing();
             ImGuiHelpers.SafeTextWrapped($"Duration: {DateTime.Now.Subtract(DateTime.Parse(entry.beginAt)):hh\\:mm\\:ss}");
         }
-        else
-        {
-            ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped("If you just reconnect, duration will not display here.");
-        }
         ImGui.Spacing();
 
-        if (ImGui.Button("Ignore"))
+        if (DataEntry.Instance != null)
         {
-            doubleCheck = true;
-        }
-
-        if (doubleCheck)
-        {
-            ImGui.SameLine();
-            if (ImGui.Button("Confirm Ignore"))
+            if (ImGui.Button("Ignore"))
             {
-                DataEntry.Reset();
-                doubleCheck = false;
+                doubleCheck = true;
             }
 
-            ImGui.SameLine();
-            if (ImGui.Button("Cancel"))
+            if (doubleCheck)
             {
-                doubleCheck = false;
+                ImGui.SameLine();
+                if (ImGui.Button("Confirm Ignore"))
+                {
+                    DataEntry.Reset();
+                    doubleCheck = false;
+                }
+
+                ImGui.SameLine();
+                if (ImGui.Button("Cancel"))
+                {
+                    doubleCheck = false;
+                }
             }
         }
-
     }
 
     private void DrawHistoryTab()
     {
         var entries = Database.Entries;
 
-        if (ImGui.Button("Enable / Disable Search Feature"))
+        if (ImGui.Button("Enable / Disable Search Function"))
         {
             enableSearch = !enableSearch;
-        }
-
-        if (enableSearch)
-        {
-            ImGui.Spacing();
-            if (ImGui.InputText("Search", ref searchBuffer, 50))
-            {
-                selectedTab = 0; // Avoid out of range
-            }
-            ImGui.Spacing();
-            if (!string.IsNullOrEmpty(searchBuffer))
-            {
-                entries = entries
-                .Where(entry =>
-                    (entry.TerritoryName?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (entry.RouletteType?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (entry.Date?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (entry.beginAt?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (entry.endAt?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (entry.jobName?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (entry.partyMembers?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (entry.comment?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false)
-            ).ToList();
-            }
+            searchBuffer = string.Empty;
         }
 
         if (entries.Count == 0)
         {
-            if (enableSearch)
-            {
-                ImGuiHelpers.SafeTextWrapped("No record found.");
-            }
-            else
-            {
-                ImGuiHelpers.SafeTextWrapped("No record yet.");
-            }
+            ImGuiHelpers.SafeTextWrapped("No record yet.");
             return;
         }
 
-        if (ImGui.BeginCombo("Select Entry", $"{entries[selectedTab].TerritoryName} - {entries[selectedTab].Date} {entries[selectedTab].beginAt}"))
+        ImGui.Columns(2, "HistoryColumns", true);
+
+        using (var child = ImRaii.Child("Sidebar", new Vector2(0, 0), true))
         {
-            for (var i = 0; i < entries.Count; i++)
+            if (!child) return;
+
+            if (enableSearch)
+            {
+                ImGui.Spacing();
+                if (ImGui.InputText("Search", ref searchBuffer, 50))
+                {
+                    selectedTab = Math.Max(-1, entries.Count - 1); // Reset to last entry
+                }
+                ImGui.Spacing();
+                if (!string.IsNullOrEmpty(searchBuffer))
+                {
+                    entries = entries
+                    .Where(entry =>
+                        (entry.TerritoryName?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (entry.RouletteType?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (entry.Date?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (entry.beginAt?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (entry.endAt?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (entry.jobName?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (entry.partyMembers?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (entry.comment?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false)
+                ).ToList();
+                    if (selectedTab >= entries.Count)
+                        selectedTab = Math.Max(-1, entries.Count - 1);
+                }
+
+                if (selectedTab == -1)
+                {
+                    ImGuiHelpers.SafeTextWrapped("No record found.");
+                    return;
+                }
+            }
+
+            for (var i = entries.Count - 1; i >= 0; i--)
             {
                 var isSelected = selectedTab == i;
                 if (ImGui.Selectable($"{entries[i].TerritoryName} - {entries[i].Date} {entries[i].beginAt}", selectedTab == i))
@@ -194,80 +198,76 @@ public class MainWindow : Window, IDisposable
                     ImGui.SetItemDefaultFocus();
                 }
             }
-            ImGui.EndCombo();
         }
 
-        var entry = entries[selectedTab];
-        ImGuiHelpers.SafeTextWrapped($"Name: {entry.TerritoryName}");
-        ImGui.Spacing();
-        ImGuiHelpers.SafeTextWrapped($"Type: {(string.IsNullOrEmpty(entry.RouletteType) ? "Normal" : entry.RouletteType)}");
-        ImGui.Spacing();
-        ImGuiHelpers.SafeTextWrapped($"Completed?: {(entry.IsCompleted ? "Yes" : "No")}");
-        ImGui.Spacing();
-        ImGuiHelpers.SafeTextWrapped($"Date: {entry.Date}");
-        ImGui.Spacing();
-        ImGuiHelpers.SafeTextWrapped($"Time: {entry.beginAt} - {(string.IsNullOrEmpty(entry.endAt) ? "N/A" : entry.endAt)}");
-        ImGui.Spacing();
-        ImGuiHelpers.SafeTextWrapped($"Job: {entry.jobName}");
-        ImGui.Spacing();
+        ImGui.NextColumn();
 
-        ImGuiHelpers.SafeTextWrapped("Party Members:");
-        if (entry.partyMembers == null)
+        using (var child = ImRaii.Child("Details", new Vector2(0, 0), true))
         {
-            ImGui.SameLine();
-            ImGuiHelpers.SafeTextWrapped("N/A");
-        }
-        else
-        {
-            // Separate by |
-            var members = entry.partyMembers.Split('|');
-            if (members.Length > 1)
-                members = members.Take(members.Length - 1).ToArray();
-            foreach (var member in members)
+            if (!child) return;
+
+            var entry = entries[selectedTab];
+            ImGuiHelpers.SafeTextWrapped($"Name: {entry.TerritoryName}");
+            ImGui.Spacing();
+            ImGuiHelpers.SafeTextWrapped($"Type: {(string.IsNullOrEmpty(entry.RouletteType) ? "Normal" : entry.RouletteType)}");
+            ImGui.Spacing();
+            ImGuiHelpers.SafeTextWrapped($"Completed?: {(entry.IsCompleted ? "Yes" : "No")}");
+            ImGui.Spacing();
+            ImGuiHelpers.SafeTextWrapped($"Date: {entry.Date}");
+            ImGui.Spacing();
+            ImGuiHelpers.SafeTextWrapped($"Time: {entry.beginAt} - {(string.IsNullOrEmpty(entry.endAt) ? "N/A" : entry.endAt)}");
+            ImGui.Spacing();
+            ImGuiHelpers.SafeTextWrapped($"Job: {entry.jobName}");
+            ImGui.Spacing();
+
+            ImGuiHelpers.SafeTextWrapped("Party Members:");
+            if (entry.partyMembers == null)
             {
-                // Remove trailing space if any
-                ImGui.BulletText(member.Trim());
+                ImGui.SameLine();
+                ImGuiHelpers.SafeTextWrapped("N/A");
+            }
+            else
+            {
+                // Separate by |
+                var members = entry.partyMembers.Split('|');
+                if (members.Length > 1)
+                    members = members.Take(members.Length - 1).ToArray();
+                foreach (var member in members)
+                {
+                    // Remove trailing space if any
+                    ImGui.BulletText(member.Trim());
+                }
+            }
+            ImGui.Spacing();
+
+            if (ImGui.Button("Delete Entry"))
+            {
+                ImGui.OpenPopup("Confirm Deletion"); // Double check
+            }
+
+            if (ImGui.BeginPopupModal("Confirm Deletion"))
+            {
+                ImGuiHelpers.SafeTextWrapped("Are you sure you want to delete this entry?");
+                ImGui.Separator();
+
+                if (ImGui.Button("Yes"))
+                {
+                    entries.RemoveAt(selectedTab);
+                    Database.Save();
+
+                    selectedTab = Math.Max(0, selectedTab - 1); // Avoid out of range
+                    ImGui.CloseCurrentPopup();
+                }
+                ImGui.SameLine();
+                if (ImGui.Button("No"))
+                {
+                    ImGui.CloseCurrentPopup();
+                }
+                ImGui.EndPopup();
             }
         }
-        ImGui.Spacing();
 
-        /*
-         * Temporarily disabled until I figure out the UI
-        commentBuffer = entry.comment;
-        if (ImGui.InputTextMultiline("Comment", ref commentBuffer, 512, new Vector2(0, 100)))
-        {
-            entry.comment = commentBuffer;
-            Database.Save();
-        }
-        ImGui.Spacing();
-        */
-
-        if (ImGui.Button("Delete Entry"))
-        {
-            ImGui.OpenPopup("Confirm Deletion"); // Double check
-        }
-
-        if (ImGui.BeginPopupModal("Confirm Deletion"))
-        {
-            ImGuiHelpers.SafeTextWrapped("Are you sure you want to delete this entry?");
-            ImGui.Separator();
-
-            if (ImGui.Button("Yes"))
-            {
-                entries.RemoveAt(selectedTab);
-                Database.Save();
-
-                selectedTab = Math.Max(0, selectedTab - 1); // Avoid out of range
-                ImGui.CloseCurrentPopup();
-            }
-            ImGui.SameLine();
-            if (ImGui.Button("No"))
-            {
-                ImGui.CloseCurrentPopup();
-            }
-            ImGui.EndPopup();
-        }
-
+        ImGui.Columns(1);
     }
 
     private void DrawSettingsTab()
