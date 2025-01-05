@@ -321,6 +321,18 @@ public class MainWindow : Window, IDisposable
             {
                 ImGui.SetTooltip("Enable to only record duty joined by roulette.");
             }
+
+            var keepIncompleteEntry = Plugin.Configuration.KeepIncompleteEntry;
+            if (ImGui.Checkbox("Keep Incomplete Entry", ref keepIncompleteEntry))
+            {
+                Plugin.Configuration.KeepIncompleteEntry = keepIncompleteEntry;
+                Plugin.Configuration.Save();
+            }
+
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Keep record regardless of completion.");
+            }
         }
 
         if (ImGui.CollapsingHeader("Output"))
