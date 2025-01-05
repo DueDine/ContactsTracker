@@ -2,7 +2,7 @@
     "Author": "Due",
     "Name": "ContactsTracker",
     "Punchline": "Help you Record Duty Completeion.",
-    "Description": "Record Duty Completeion and Team Composition (TODO).\nRemember to check Settings Tab.\nYou can use the Settings button below to enter analyze window",
+    "Description": "Record Duty and Party Member.\nRemember to check Settings Tab.\nUse the Settings button to enter analyze window.",
     "ApplicableVersion": "any",
     "Tags": [
         "plugin",
