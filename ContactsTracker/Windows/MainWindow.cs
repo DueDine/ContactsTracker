@@ -1,3 +1,4 @@
+using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
@@ -34,24 +35,29 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
-        if (ImGui.BeginTabBar("MainTabBar"))
+        using var tabBar = ImRaii.TabBar("MainTabBar");
+        if (!tabBar) return;
+
+        using (var activeTab = ImRaii.TabItem("Active"))
         {
-            if (ImGui.BeginTabItem("Active"))
+            if (activeTab)
             {
                 DrawActiveTab();
-                ImGui.EndTabItem();
             }
-            if (ImGui.BeginTabItem("History"))
+        }
+        using (var historyTab = ImRaii.TabItem("History"))
+        {
+            if (historyTab)
             {
                 DrawHistoryTab();
-                ImGui.EndTabItem();
             }
-            if (ImGui.BeginTabItem("Settings"))
+        }
+        using (var settingsTab = ImRaii.TabItem("Settings"))
+        {
+            if (settingsTab)
             {
                 DrawSettingsTab();
-                ImGui.EndTabItem();
             }
-            ImGui.EndTabBar();
         }
     }
 
@@ -242,28 +248,28 @@ public class MainWindow : Window, IDisposable
 
             if (ImGui.Button("Delete Entry"))
             {
-                ImGui.OpenPopup("Confirm Deletion"); // Double check
-            }
-
-            if (ImGui.BeginPopupModal("Confirm Deletion"))
-            {
-                ImGuiHelpers.SafeTextWrapped("Are you sure you want to delete this entry?");
-                ImGui.Separator();
-
-                if (ImGui.Button("Yes"))
+                if (Plugin.KeyState[VirtualKey.CONTROL])
                 {
                     entries.RemoveAt(selectedTab);
                     Database.Save();
 
-                    selectedTab = Math.Max(0, selectedTab - 1); // Avoid out of range
-                    ImGui.CloseCurrentPopup();
+                    if (selectedTab >= entries.Count)
+                    {
+                        selectedTab = Math.Max(-1, entries.Count - 1);
+                    }
                 }
-                ImGui.SameLine();
-                if (ImGui.Button("No"))
+            }
+
+            if (ImGui.IsItemHovered())
+            {
+                if (!Plugin.KeyState[VirtualKey.CONTROL])
                 {
-                    ImGui.CloseCurrentPopup();
+                    ImGui.SetTooltip("Hold CTRL to Delete.");
                 }
-                ImGui.EndPopup();
+                else
+                {
+                    ImGui.SetTooltip("This action is irreversible.");
+                }
             }
         }
 
