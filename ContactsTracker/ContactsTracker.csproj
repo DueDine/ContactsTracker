@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <Version>0.1.0.2</Version>
+    <Version>0.1.0.3</Version>
     <Description>Help you remember previous contacts.</Description>
     <PackageProjectUrl>https://github.com/DueDine/ContactsTracker</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
