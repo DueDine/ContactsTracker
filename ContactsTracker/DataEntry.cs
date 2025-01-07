@@ -47,7 +47,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
 
         if (configuration.EnableLogParty == false)
         {
-            Instance.partyMembers = "Party Logging Disabled";
+            Instance.partyMembers = "Party Logging Disabled For this Entry";
         }
         else
         {
@@ -69,12 +69,17 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
                 var names = new string[numOfParty];
                 for (var i = 0; i < numOfParty; i++)
                 {
-                    var partyMember = Plugin.PartyList.CreatePartyMemberReference(Plugin.PartyList.GetPartyMemberAddress(i));
+                    var partyMember = Plugin.PartyList[i];
                     if (partyMember != null)
                     {
                         var worldID = groupManager->GetPartyMemberByContentId((ulong)partyMember.ContentId)->HomeWorld;
                         var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(worldID).Name.ExtractText();
-                        names[i] = partyMember.Name.ToString() + " @ " + worldName;
+                        names[i] = $"{partyMember.Name} @ {worldName}";
+                        if (configuration.LogPartyClass)
+                        {
+                            var jobName = partyMember.ClassJob.Value.Abbreviation.ExtractText();
+                            names[i] += $" ({jobName})";
+                        }
                     }
                 }
                 foreach (var name in names)

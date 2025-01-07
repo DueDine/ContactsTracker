@@ -12,6 +12,8 @@ public class Configuration : IPluginConfiguration
 
     public bool EnableLogParty { get; set; } = false;
 
+    public bool LogPartyClass { get; set; } = false;
+
     public bool RecordSolo { get; set; } = false;
 
     public bool PrintToChat { get; set; } = false;

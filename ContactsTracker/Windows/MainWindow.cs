@@ -1,7 +1,9 @@
 using Dalamud.Game.ClientState.Keys;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
+using Dalamud.Utility;
 using ImGuiNET;
 using System;
 using System.Linq;
@@ -57,6 +59,13 @@ public class MainWindow : Window, IDisposable
             if (settingsTab)
             {
                 DrawSettingsTab();
+            }
+        }
+        using (var aboutTab = ImRaii.TabItem("About"))
+        {
+            if (aboutTab)
+            {
+                DrawAboutTab();
             }
         }
     }
@@ -304,6 +313,23 @@ public class MainWindow : Window, IDisposable
                 ImGui.SetTooltip("Enable to log party members on completion.");
             }
 
+            if (Plugin.Configuration.EnableLogParty)
+            {
+                ImGui.SameLine();
+
+                var logPartyClass = Plugin.Configuration.LogPartyClass;
+                if (ImGui.Checkbox("Log Party Class", ref logPartyClass))
+                {
+                    Plugin.Configuration.LogPartyClass = logPartyClass;
+                    Plugin.Configuration.Save();
+                }
+
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.SetTooltip("Also record their class.");
+                }
+            }
+
             var recordSolo = Plugin.Configuration.RecordSolo;
             if (ImGui.Checkbox("Record Solo", ref recordSolo))
             {
@@ -472,6 +498,28 @@ public class MainWindow : Window, IDisposable
             if (ImGui.IsItemHovered())
             {
                 ImGui.SetTooltip("Show the button to delete all active entries at Data Tab.");
+            }
+        }
+    }
+
+    private static void DrawAboutTab()
+    {
+        ImGuiHelpers.ScaledDummy(5f);
+
+        ImGui.TextColored(ImGuiColors.DalamudRed, "This plugin is in early development. Please report any bugs or suggestions to the developer.");
+        
+        ImGuiHelpers.ScaledDummy(2f);
+
+        ImGui.TextColored(ImGuiColors.DalamudOrange, "Discord: @lamitt");
+        ImGui.TextColored(ImGuiColors.DalamudOrange, "You can ping me at the Dalamud Discord server. Or open an issue at the GitHub repository.");
+
+        ImGuiHelpers.ScaledDummy(5f);
+
+        using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.ParsedBlue))
+        {
+            if (ImGui.Button("GitHub Repository"))
+            {
+                Util.OpenLink("https://github.com/DueDine/ContactsTracker");
             }
         }
     }
