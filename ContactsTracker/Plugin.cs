@@ -1,4 +1,5 @@
 using ContactsTracker.Windows;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Command;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Windowing;
@@ -22,6 +23,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IPluginLog Logger { get; private set; } = null!;
     [PluginService] internal static IPartyList PartyList { get; private set; } = null!;
     [PluginService] internal static IKeyState KeyState { get; private set; } = null!;
+    [PluginService] internal static ICondition Condition { get; private set; } = null!;
 
     private const string CommandName = "/ctracker";
 
@@ -109,6 +111,11 @@ public sealed class Plugin : IDalamudPlugin
     private void OnTerritoryChanged(ushort territoryID)
     {
         if (Configuration.EnableLogging == false)
+        {
+            return;
+        }
+
+        if (Condition[ConditionFlag.DutyRecorderPlayback])
         {
             return;
         }
