@@ -1,3 +1,5 @@
+using ContactsTracker.Data;
+using ContactsTracker.Query;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
@@ -25,52 +27,7 @@ public class AnalyzeWindow : Window, IDisposable
     private bool isBusy = false;
     private int topX = 0;
 
-    private static List<(string? TerritoryName, string? RouletteType, int Count)> ExtractOccurrences(List<DataEntry> Entries)
-    {
-        return Entries
-            .Where(entry => entry.IsCompleted)
-            .GroupBy(Entries => (Entries.TerritoryName, Entries.RouletteType))
-            .Select(group => (group.Key.TerritoryName, group.Key.RouletteType, group.Count()))
-            .ToList();
-    }
-
     private List<(string? TerritoryName, string? RouletteType, int Count)> resultsExtractOccurrences = [];
-
-    private static List<(string? RouletteType, TimeSpan TotalDuration, TimeSpan AverageDuration)> CalculateTotalDurations(List<DataEntry> Entries)
-    {
-        return Entries
-            .Where(entry => entry.IsCompleted && entry.endAt != null)
-            .GroupBy(entry => entry.RouletteType)
-            .Select(group =>
-            {
-                var validDurations = group
-                    .Select(entry =>
-                    {
-                        if (TimeSpan.TryParse(entry.beginAt, out var beginAt) && TimeSpan.TryParse(entry.endAt, out var endAt))
-                        {
-                            if (endAt < beginAt) // If the roulette ends on the next day
-                            {
-                                endAt = endAt.Add(TimeSpan.FromDays(1));
-                            }
-
-                            return endAt - beginAt;
-                        }
-
-                        return TimeSpan.Zero;
-                    })
-                    .Where(duration => duration > TimeSpan.Zero)
-                    .ToList();
-
-                var totalDuration = validDurations.Aggregate(TimeSpan.Zero, (sum, duration) => sum + duration);
-                var averageDuration = validDurations.Count > 0
-                    ? TimeSpan.FromTicks(validDurations.Sum(d => d.Ticks) / validDurations.Count)
-                    : TimeSpan.Zero;
-
-                return (RouletteType: group.Key, TotalDuration: totalDuration, AverageDuration: averageDuration);
-            })
-            .ToList();
-    }
-
     private List<(string? RouletteType, TimeSpan TotalDuration, TimeSpan AverageDuration)> resultsTotalDurations = [];
 
     public AnalyzeWindow(Plugin plugin)
@@ -92,145 +49,149 @@ public class AnalyzeWindow : Window, IDisposable
         ImGuiHelpers.SafeTextWrapped("If you have a suggestion for a new query, please let me know.");
         ImGuiHelpers.ScaledDummy(5f);
 
-        if (ImGui.CollapsingHeader("Top X pair of Roulette and Map"))
+        DrawTopXQuery();
+        DrawTotalDurationQuery();
+    }
+
+    private void DrawTopXQuery()
+    {
+        if (!ImGui.CollapsingHeader("Top X pair of Roulette and Map")) return;
+
+        ImGui.SetNextItemWidth(100);
+        if (ImGui.InputInt("##TopX", ref topX))
         {
-            ImGui.SetNextItemWidth(100);
-            if (ImGui.InputInt(Namespace + "TopX", ref topX))
+            if (topX < 1) topX = 0;
+            topXState.IsClicked = false;
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("Query##Q1"))
+        {
+            topXState.IsClicked = true;
+            topXState.IsAvailable = false;
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("Reset##R1"))
+        {
+            topXState.IsClicked = false;
+            topXState.IsAvailable = false;
+            resultsExtractOccurrences.Clear();
+        }
+
+        if (topXState.IsClicked && topX != 0)
+        {
+            if (isBusy)
             {
-                if (topX < 1)
-                    topX = 0;
+                ImGuiHelpers.SafeTextWrapped("Processing...");
+            }
+            else
+            {
+                isBusy = true;
+                var occurrences = RouletteQueries.ExtractOccurrences(Database.Entries);
+                occurrences.Sort((a, b) => b.Count.CompareTo(a.Count));
+                if (topX >= 1)
+                {
+                    occurrences = [.. occurrences.Take(topX)];
+                }
+                resultsExtractOccurrences = occurrences;
+                topXState.IsAvailable = true;
+                isBusy = false;
                 topXState.IsClicked = false;
-            }
-            ImGui.SameLine();
-            if (ImGui.Button("Query##Q1"))
-            {
-                topXState.IsClicked = true;
-                topXState.IsAvailable = false;
-            }
-            ImGui.SameLine();
-            if (ImGui.Button("Reset##R1"))
-            {
-                topXState.IsClicked = false;
-                topXState.IsAvailable = false;
-                resultsExtractOccurrences.Clear();
-            }
-
-            if (topXState.IsClicked && topX != 0)
-            {
-                if (isBusy)
-                {
-                    ImGuiHelpers.SafeTextWrapped("Processing...");
-                }
-                else
-                {
-                    isBusy = true;
-                    var occurrences = ExtractOccurrences(Database.Entries);
-                    occurrences.Sort((a, b) => b.Count.CompareTo(a.Count));
-                    if (topX >= 1)
-                    {
-                        occurrences = occurrences.Take(topX).ToList();
-                    }
-                    resultsExtractOccurrences = occurrences;
-                    topXState.IsAvailable = true;
-                    isBusy = false;
-                    topXState.IsClicked = false;
-                }
-            }
-
-            if (topXState.IsAvailable)
-            {
-                if (resultsExtractOccurrences.Count == 0)
-                {
-                    ImGuiHelpers.SafeTextWrapped("No data available.");
-                }
-                else
-                {
-                    using var table = ImRaii.Table("##ExtractOccurrences", 3);
-                    if (!table) return;
-
-                    ImGui.TableNextColumn();
-                    ImGui.TableHeader("Map");
-                    ImGui.TableNextColumn();
-                    ImGui.TableHeader("Roulette");
-                    ImGui.TableNextColumn();
-                    ImGui.TableHeader("Times");
-
-                    foreach (var (TerritoryName, RouletteType, Count) in resultsExtractOccurrences)
-                    {
-                        ImGui.TableNextRow();
-                        ImGui.TableNextColumn();
-                        ImGuiHelpers.SafeTextWrapped(TerritoryName ?? "Unknown");
-                        ImGui.TableNextColumn();
-                        ImGuiHelpers.SafeTextWrapped(RouletteType ?? "Unknown");
-                        ImGui.TableNextColumn();
-                        ImGuiHelpers.SafeTextWrapped(Count.ToString());
-                    }
-                }
             }
         }
 
-        if (ImGui.CollapsingHeader("How much time for each roulette"))
+        if (topXState.IsAvailable)
         {
-            if (ImGui.Button("Query##Q2"))
+            if (resultsExtractOccurrences.Count == 0)
             {
-                totalDurationState.IsClicked = true;
-                totalDurationState.IsAvailable = false;
+                ImGuiHelpers.SafeTextWrapped("No data available.");
+                return;
             }
-            ImGui.SameLine();
-            if (ImGui.Button("Reset##R2"))
+
+            using var table = ImRaii.Table("##ExtractOccurrences", 3);
+            if (!table) return;
+
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Map");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Roulette");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Times");
+
+            foreach (var (TerritoryName, RouletteType, Count) in resultsExtractOccurrences)
             {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGuiHelpers.SafeTextWrapped(TerritoryName ?? "Unknown");
+                ImGui.TableNextColumn();
+                ImGuiHelpers.SafeTextWrapped(RouletteType ?? "Unknown");
+                ImGui.TableNextColumn();
+                ImGuiHelpers.SafeTextWrapped(Count.ToString());
+            }
+        }
+    }
+
+    private void DrawTotalDurationQuery()
+    {
+        if (!ImGui.CollapsingHeader("How much time for each roulette")) return;
+
+        if (ImGui.Button("Query##Q2"))
+        {
+            totalDurationState.IsClicked = true;
+            totalDurationState.IsAvailable = false;
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("Reset##R2"))
+        {
+            totalDurationState.IsClicked = false;
+            totalDurationState.IsAvailable = false;
+            resultsTotalDurations.Clear();
+        }
+
+        if (totalDurationState.IsClicked)
+        {
+            if (isBusy)
+            {
+                ImGuiHelpers.SafeTextWrapped("Processing...");
+            }
+            else
+            {
+                isBusy = true;
+                var durations = RouletteQueries.CalculateTotalDurations(Database.Entries);
+                durations.Sort((a, b) => b.TotalDuration.CompareTo(a.TotalDuration));
+                resultsTotalDurations = durations;
+                totalDurationState.IsAvailable = true;
+                isBusy = false;
                 totalDurationState.IsClicked = false;
-                totalDurationState.IsAvailable = false;
-                resultsTotalDurations.Clear();
+            }
+        }
+
+        if (totalDurationState.IsAvailable)
+        {
+            if (resultsTotalDurations.Count == 0)
+            {
+                ImGuiHelpers.SafeTextWrapped("No data available.");
+                return;
             }
 
-            if (totalDurationState.IsClicked)
+            using var table = ImRaii.Table("##TotalDurations", 3);
+            if (!table) return;
+
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Type");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Total");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Average");
+
+            foreach (var (RouletteType, TotalDuration, AverageDuration) in resultsTotalDurations)
             {
-                if (isBusy)
-                {
-                    ImGuiHelpers.SafeTextWrapped("Processing...");
-                }
-                else
-                {
-                    isBusy = true;
-                    var durations = CalculateTotalDurations(Database.Entries);
-                    durations.Sort((a, b) => b.TotalDuration.CompareTo(a.TotalDuration));
-                    resultsTotalDurations = durations;
-                    totalDurationState.IsAvailable = true;
-                    isBusy = false;
-                    totalDurationState.IsClicked = false;
-                }
-            }
-
-            if (totalDurationState.IsAvailable)
-            {
-                if (resultsTotalDurations.Count == 0)
-                {
-                    ImGuiHelpers.SafeTextWrapped("No data available.");
-                }
-                else
-                {
-                    using var table = ImRaii.Table("##TotalDurations", 3);
-                    if (!table) return;
-
-                    ImGui.TableNextColumn();
-                    ImGui.TableHeader("Type");
-                    ImGui.TableNextColumn();
-                    ImGui.TableHeader("Total");
-                    ImGui.TableNextColumn();
-                    ImGui.TableHeader("Average");
-
-                    foreach (var (RouletteType, TotalDuration, AverageDuration) in resultsTotalDurations)
-                    {
-                        ImGui.TableNextRow();
-                        ImGui.TableNextColumn();
-                        ImGuiHelpers.SafeTextWrapped(RouletteType ?? "Unknown");
-                        ImGui.TableNextColumn();
-                        ImGuiHelpers.SafeTextWrapped(TotalDuration.ToString());
-                        ImGui.TableNextColumn();
-                        ImGuiHelpers.SafeTextWrapped(AverageDuration.ToString("hh\\:mm\\:ss"));
-                    }
-                }
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGuiHelpers.SafeTextWrapped(RouletteType ?? "Unknown");
+                ImGui.TableNextColumn();
+                ImGuiHelpers.SafeTextWrapped(TotalDuration.ToString());
+                ImGui.TableNextColumn();
+                ImGuiHelpers.SafeTextWrapped(AverageDuration.ToString("hh\\:mm\\:ss"));
             }
         }
     }

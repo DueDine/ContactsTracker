@@ -1,4 +1,5 @@
 using ContactsTracker.Windows;
+using ContactsTracker.Data;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Command;
 using Dalamud.Interface.ImGuiFileDialog;
