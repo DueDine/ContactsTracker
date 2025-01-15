@@ -2,7 +2,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using Lumina.Excel.Sheets;
 using System;
 
-namespace ContactsTracker;
+namespace ContactsTracker.Data;
 
 public class DataEntry(string? territoryName, string? rouletteType, bool isCompleted)
 {

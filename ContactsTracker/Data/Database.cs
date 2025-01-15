@@ -7,7 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 
-namespace ContactsTracker;
+namespace ContactsTracker.Data;
 
 public class Database
 {

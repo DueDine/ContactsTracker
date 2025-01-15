@@ -1,3 +1,4 @@
+using ContactsTracker.Data;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
