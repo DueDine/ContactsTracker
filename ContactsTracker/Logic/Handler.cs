@@ -50,9 +50,9 @@ public class Handler
 
     private void OnLogout(int type, int code)
     {
-        if (DataEntry.Instance != null && DataEntry.Instance.IsCompleted == false && !string.IsNullOrEmpty(DataEntry.Instance.TerritoryName))
+        if (DataEntryV2.Instance != null && DataEntryV2.Instance.IsCompleted == false && DataEntryV2.Instance.TerritoryId != 0)
         {
-            Database.SaveInProgressEntry(DataEntry.Instance);
+            DatabaseV2.SaveInProgressEntry(DataEntryV2.Instance);
         }
     }
 
@@ -70,21 +70,21 @@ public class Handler
 
         var territoryName = ExcelHelper.GetTerritoryName(territoryID);
 
-        if (Database.isDirty)
+        if (DatabaseV2.isDirty)
         {
             if (!string.IsNullOrEmpty(territoryName))
             {
-                var entry = Database.LoadFromTempPath();
-                if (entry != null && entry.TerritoryName == territoryName)
+                var entry = DatabaseV2.LoadInProgressEntry();
+                if (entry != null && entry.TerritoryId == territoryID)
                 {
-                    DataEntry.Initialize(entry);
+                    DataEntryV2.Initialize(entry);
                 }
-                Database.isDirty = false; // False whatever the result
+                DatabaseV2.isDirty = false; // False whatever the result
             }
             return;
         }
 
-        if (DataEntry.Instance == null)
+        if (DataEntryV2.Instance == null)
         {
             if (!string.IsNullOrEmpty(territoryName))
             {
@@ -92,7 +92,7 @@ public class Handler
                 {
                     return;
                 }
-                DataEntry.Initialize(null, null, false);
+                DataEntryV2.Initialize(territoryID, 0);
             }
             else
             {
@@ -100,28 +100,29 @@ public class Handler
             }
         }
 
-        if (DataEntry.Instance!.TerritoryName == null)
+        if (DataEntryV2.Instance!.TerritoryId == 0)
         {
-            DataEntry.Instance.TerritoryName = territoryName;
-            DataEntry.Instance.beginAt = DateTime.Now.ToString("T"); // Refresh
+            DataEntryV2.Instance.TerritoryId = territoryID;
+            DataEntryV2.Instance.BeginAt = DateTime.Now; // Refresh
             var localPlayer = ClientState.LocalPlayer;
             if (localPlayer != null)
             {
-                DataEntry.Instance.jobName = Plugin.UpperFirst(localPlayer.ClassJob.Value.Name.ExtractText());
+                DataEntryV2.Instance.PlayerJobAbbr = localPlayer.ClassJob.Value.Name.ExtractText();
             }
         }
-        else if (DataEntry.Instance.TerritoryName == territoryName) // Intended to handle rejoin
+        else if (DataEntryV2.Instance.TerritoryId == territoryID) // Intended to handle rejoin
         {
+            // Intentionally do nothing
         }
         else
         {
             if (Configuration.KeepIncompleteEntry)
             {
-                DataEntry.finalize(Configuration);
+                DataEntryV2.EndRecord(Configuration);
             }
             else
             {
-                DataEntry.Reset();
+                DataEntryV2.Reset();
             }
         }
     }
@@ -133,12 +134,11 @@ public class Handler
             return;
         }
 
-        if (DataEntry.Instance != null)
+        if (DataEntryV2.Instance != null)
         {
-            var territoryName = ExcelHelper.GetTerritoryName(territoryID);
-            if (DataEntry.Instance.TerritoryName == territoryName)
+            if (DataEntryV2.Instance.TerritoryId == territoryID)
             {
-                DataEntry.Instance.beginAt = DateTime.Now.ToString("T"); // More accurate
+                DataEntryV2.Instance.BeginAt = DateTime.Now; // More accurate
             }
         }
     }
@@ -150,22 +150,17 @@ public class Handler
             return;
         }
 
-        if (DataEntry.Instance == null)
+        if (DataEntryV2.Instance == null)
         {
             return;
         }
 
-        DataEntry.Instance.IsCompleted = true;
-        DataEntry.finalize(Configuration);
+        DataEntryV2.Instance.IsCompleted = true;
+        DataEntryV2.EndRecord(Configuration);
 
         if (Configuration.PrintToChat)
         {
             ChatGui.Print("ContactsTracker Record Completed");
-        }
-
-        if (Database.Entries.Count >= Configuration.ArchiveWhenEntriesExceed)
-        {
-            Database.Archive(Configuration);
         }
     }
 
@@ -179,13 +174,12 @@ public class Handler
         var queueInfo = ContentsFinder.Instance()->QueueInfo;
         if (queueInfo.PoppedContentType == ContentsFinderQueueInfo.PoppedContentTypes.Roulette)
         {
-            var type = ExcelHelper.GetPoppedContentType(queueInfo.PoppedContentId);
-            DataEntry.Reset(); // Reset. Some may choose to abandon the roulette
-            DataEntry.Initialize(null, type, false);
+            DataEntryV2.Reset(); // Reset. Some may choose to abandon the roulette
+            DataEntryV2.Initialize(0, queueInfo.PoppedContentId);
         }
         else
         {
-            DataEntry.Reset(); // Handle case where user DR -> Abandon -> Non DR vice versa
+            DataEntryV2.Reset(); // Handle case where user DR -> Abandon -> Non DR vice versa
         }
     }
 }

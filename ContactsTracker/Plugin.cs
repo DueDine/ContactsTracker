@@ -1,6 +1,6 @@
-using ContactsTracker.Windows;
 using ContactsTracker.Data;
 using ContactsTracker.Logic;
+using ContactsTracker.Windows;
 using Dalamud.Game.Command;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Windowing;
@@ -64,7 +64,19 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
         PluginInterface.UiBuilder.OpenConfigUi += ToggleAnalyzeUI;
 
-        Database.Load();
+        if (Configuration.Version != 1) // Then migrate from old data to new data
+        {
+            Database.Load();
+            if (Migration.EntryV1ToV2.Migrate())
+            {
+                Configuration.Version = 1;
+                Configuration.Save();
+            }
+        }
+        else
+        {
+            DatabaseV2.Load();
+        }
     }
 
     public void Dispose()
@@ -85,7 +97,7 @@ public sealed class Plugin : IDalamudPlugin
                     AnalyzeWindow.Toggle();
                     break;
                 case "reload":
-                    Database.Load();
+                    // Database.Load();
                     break;
                 default:
                     MainWindow.Toggle();

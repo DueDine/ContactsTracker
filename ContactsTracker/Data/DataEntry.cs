@@ -1,5 +1,4 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
-using Lumina.Excel.Sheets;
 using System;
 
 namespace ContactsTracker.Data;

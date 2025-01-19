@@ -48,4 +48,4 @@ public static class RouletteQueries
                 return (RouletteType: group.Key, TotalDuration: totalDuration, AverageDuration: averageDuration);
             })];
     }
-} 
+}

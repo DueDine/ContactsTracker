@@ -508,7 +508,7 @@ public class MainWindow : Window, IDisposable
         ImGuiHelpers.ScaledDummy(5f);
 
         ImGui.TextColored(ImGuiColors.DalamudRed, "This plugin is in early development. Please report any bugs or suggestions to the developer.");
-        
+
         ImGuiHelpers.ScaledDummy(2f);
 
         ImGui.TextColored(ImGuiColors.DalamudOrange, "Discord: @lamitt");
