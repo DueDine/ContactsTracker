@@ -55,9 +55,11 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Open Plugin\n" +
-                          "/ctracker analyze -> AnalyzeWindow\n" +
-                          "/ctracker reload -> Reload Database"
+            HelpMessage = """
+                          Open Plugin
+                          /ctracker analyze -> AnalyzeWindow
+                          /ctracker reload -> Reload Database
+                          """
         });
 
         PluginInterface.UiBuilder.Draw += DrawUI;

@@ -79,17 +79,17 @@ public class MainWindow : Window, IDisposable
             return;
         }
 
-        var entries = Database.Entries;
-        if (entries.Count == 0 && DataEntry.Instance == null)
+        var entries = DatabaseV2.Entries;
+        if (entries.Count == 0 && DataEntryV2.Instance == null)
         {
             ImGuiHelpers.SafeTextWrapped("No record yet.");
             return;
         }
 
         var entry = entries.LastOrDefault();
-        if (DataEntry.Instance != null && !string.IsNullOrEmpty(DataEntry.Instance.TerritoryName))
+        if (DataEntryV2.Instance != null && DataEntryV2.Instance.TerritoryId != 0)
         {
-            entry = DataEntry.Instance;
+            entry = DataEntryV2.Instance;
             ImGuiHelpers.SafeTextWrapped("Currently Logging");
         }
         else if (entry != default)
@@ -103,27 +103,25 @@ public class MainWindow : Window, IDisposable
         }
 
         ImGui.Spacing();
-        ImGuiHelpers.SafeTextWrapped($"Place: {entry.TerritoryName}");
+        ImGuiHelpers.SafeTextWrapped($"Place: {ExcelHelper.GetTerritoryName(entry.TerritoryId)}");
         ImGui.Spacing();
-        ImGuiHelpers.SafeTextWrapped($"Join via: {(string.IsNullOrEmpty(entry.RouletteType) ? "Normal" : entry.RouletteType)}");
+        ImGuiHelpers.SafeTextWrapped($"Join via: {ExcelHelper.GetPoppedContentType(entry.RouletteId)}");
         ImGui.Spacing();
-        ImGuiHelpers.SafeTextWrapped($"When: {entry.Date}");
-        ImGui.SameLine();
-        ImGuiHelpers.SafeTextWrapped($"{entry.beginAt} - {(string.IsNullOrEmpty(entry.endAt) ? "N/A" : entry.endAt)}");
+        ImGuiHelpers.SafeTextWrapped($"{entry.BeginAt} - {(entry.EndAt == DateTime.MinValue ? "N/A" : entry.EndAt)}");
 
-        if (!string.IsNullOrEmpty(entry.endAt))
+        if (entry.EndAt != DateTime.MinValue)
         {
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"Duration: {DateTime.Parse(entry.endAt).Subtract(DateTime.Parse(entry.beginAt)):hh\\:mm\\:ss}");
+            ImGuiHelpers.SafeTextWrapped($"Duration: {entry.EndAt.Subtract(entry.BeginAt):hh\\:mm\\:ss}");
         }
         else if (Plugin.DutyState.IsDutyStarted) // Still in progress
         {
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"Duration: {DateTime.Now.Subtract(DateTime.Parse(entry.beginAt)):hh\\:mm\\:ss}");
+            ImGuiHelpers.SafeTextWrapped($"Duration: {DateTime.Now.Subtract(entry.BeginAt):hh\\:mm\\:ss}");
         }
         ImGui.Spacing();
 
-        if (DataEntry.Instance != null)
+        if (DataEntryV2.Instance != null)
         {
             if (ImGui.Button("Ignore"))
             {
@@ -135,7 +133,7 @@ public class MainWindow : Window, IDisposable
                 ImGui.SameLine();
                 if (ImGui.Button("Confirm Ignore"))
                 {
-                    DataEntry.Reset();
+                    DataEntryV2.Reset();
                     doubleCheck = false;
                 }
 
@@ -150,14 +148,14 @@ public class MainWindow : Window, IDisposable
 
     private void DrawHistoryTab()
     {
-        var entries = Database.Entries;
-
+        var entries = DatabaseV2.Entries;
+        /*
         if (ImGui.Button("Enable / Disable Search Function"))
         {
             enableSearch = !enableSearch;
             searchBuffer = string.Empty;
         }
-
+        */
         if (entries.Count == 0)
         {
             ImGuiHelpers.SafeTextWrapped("No record yet.");
@@ -170,6 +168,7 @@ public class MainWindow : Window, IDisposable
         {
             if (!child) return;
 
+            /*
             if (enableSearch)
             {
                 ImGui.Spacing();
@@ -201,11 +200,12 @@ public class MainWindow : Window, IDisposable
                     return;
                 }
             }
-
+            */
+            entries = [.. entries.OrderBy(entry => entry.BeginAt)];
             for (var i = entries.Count - 1; i >= 0; i--)
             {
                 var isSelected = selectedTab == i;
-                if (ImGui.Selectable($"{entries[i].TerritoryName} - {entries[i].Date} {entries[i].beginAt}", selectedTab == i))
+                if (ImGui.Selectable($"{ExcelHelper.GetTerritoryName(entries[i].TerritoryId)} - {entries[i].BeginAt:yyyy-MM-dd HH:mm:ss}", selectedTab == i))
                 {
                     selectedTab = i;
                 }
@@ -223,35 +223,28 @@ public class MainWindow : Window, IDisposable
             if (!child) return;
 
             var entry = entries[selectedTab];
-            ImGuiHelpers.SafeTextWrapped($"Name: {entry.TerritoryName}");
+            ImGuiHelpers.SafeTextWrapped($"Name: {ExcelHelper.GetTerritoryName(entry.TerritoryId)}");
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"Type: {(string.IsNullOrEmpty(entry.RouletteType) ? "Normal" : entry.RouletteType)}");
+            ImGuiHelpers.SafeTextWrapped($"Type: {ExcelHelper.GetPoppedContentType(entry.RouletteId)}");
             ImGui.Spacing();
             ImGuiHelpers.SafeTextWrapped($"Completed?: {(entry.IsCompleted ? "Yes" : "No")}");
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"Date: {entry.Date}");
+            ImGuiHelpers.SafeTextWrapped($"Time: {entry.BeginAt:yyyy-MM-dd HH:mm:ss} - {(entry.EndAt == DateTime.MinValue ? "N/A" : entry.EndAt)}");
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"Time: {entry.beginAt} - {(string.IsNullOrEmpty(entry.endAt) ? "N/A" : entry.endAt)}");
-            ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"Job: {entry.jobName}");
+            ImGuiHelpers.SafeTextWrapped($"Job: {entry.PlayerJobAbbr}");
             ImGui.Spacing();
 
             ImGuiHelpers.SafeTextWrapped("Party Members:");
-            if (entry.partyMembers == null)
+            if (entry.PartyMembers.Length == 0)
             {
                 ImGui.SameLine();
                 ImGuiHelpers.SafeTextWrapped("N/A");
             }
             else
             {
-                // Separate by |
-                var members = entry.partyMembers.Split('|');
-                if (members.Length > 1)
-                    members = members.Take(members.Length - 1).ToArray();
-                foreach (var member in members)
+                foreach (var member in entry.PartyMembers)
                 {
-                    // Remove trailing space if any
-                    ImGui.BulletText(member.Trim());
+                    ImGui.BulletText(member);
                 }
             }
             ImGui.Spacing();
@@ -261,7 +254,7 @@ public class MainWindow : Window, IDisposable
                 if (Plugin.KeyState[VirtualKey.CONTROL])
                 {
                     entries.RemoveAt(selectedTab);
-                    Database.Save();
+                    DatabaseV2.Save();
 
                     if (selectedTab >= entries.Count)
                     {
@@ -388,7 +381,7 @@ public class MainWindow : Window, IDisposable
         {
             if (ImGui.Button("Export to CSV"))
             {
-                Database.Export();
+                DatabaseV2.Export();
             }
 
             ImGui.SameLine();
@@ -401,7 +394,7 @@ public class MainWindow : Window, IDisposable
                     if (success && paths.Count > 0)
                     {
                         var path = paths.First();
-                        var ok = Database.Import(path);
+                        var ok = DatabaseV2.Import(path);
                         if (ok)
                         {
                             Plugin.ChatGui.Print("Imported successfully.");
@@ -420,7 +413,7 @@ public class MainWindow : Window, IDisposable
             {
                 Plugin.FileDialogManager.Draw();
             }
-
+            /*
             ImGui.Spacing();
 
             var autoArchive = Plugin.Configuration.ArchiveOldEntries;
@@ -456,7 +449,7 @@ public class MainWindow : Window, IDisposable
                 }
 
             }
-
+            */
             ImGui.Spacing();
 
             if (Plugin.Configuration.EnableDeleteAll)
@@ -473,7 +466,7 @@ public class MainWindow : Window, IDisposable
 
                     if (ImGui.Button("Yes"))
                     {
-                        Database.Reset();
+                        DatabaseV2.Reset();
                         ImGui.CloseCurrentPopup();
                     }
                     ImGui.SameLine();

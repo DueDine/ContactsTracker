@@ -27,8 +27,8 @@ public class AnalyzeWindow : Window, IDisposable
     private bool isBusy = false;
     private int topX = 0;
 
-    private List<(string? TerritoryName, string? RouletteType, int Count)> resultsExtractOccurrences = [];
-    private List<(string? RouletteType, TimeSpan TotalDuration, TimeSpan AverageDuration)> resultsTotalDurations = [];
+    private List<(ushort TerritoryId, uint RouletteId, int Count)> resultsExtractOccurrences = [];
+    private List<(uint RouletteId, TimeSpan TotalDuration, TimeSpan AverageDuration)> resultsTotalDurations = [];
 
     public AnalyzeWindow(Plugin plugin)
     : base("Analyze - Still developing", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
@@ -86,7 +86,7 @@ public class AnalyzeWindow : Window, IDisposable
             else
             {
                 isBusy = true;
-                var occurrences = RouletteQueries.ExtractOccurrences(Database.Entries);
+                var occurrences = RouletteQueries.ExtractOccurrences(DatabaseV2.Entries);
                 occurrences.Sort((a, b) => b.Count.CompareTo(a.Count));
                 if (topX >= 1)
                 {
@@ -117,13 +117,13 @@ public class AnalyzeWindow : Window, IDisposable
             ImGui.TableNextColumn();
             ImGui.TableHeader("Times");
 
-            foreach (var (TerritoryName, RouletteType, Count) in resultsExtractOccurrences)
+            foreach (var (TerritoryId, RouletteId, Count) in resultsExtractOccurrences)
             {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGuiHelpers.SafeTextWrapped(TerritoryName ?? "Unknown");
+                ImGuiHelpers.SafeTextWrapped(ExcelHelper.GetTerritoryName(TerritoryId));
                 ImGui.TableNextColumn();
-                ImGuiHelpers.SafeTextWrapped(RouletteType ?? "Unknown");
+                ImGuiHelpers.SafeTextWrapped(ExcelHelper.GetPoppedContentType(RouletteId));
                 ImGui.TableNextColumn();
                 ImGuiHelpers.SafeTextWrapped(Count.ToString());
             }
@@ -156,7 +156,7 @@ public class AnalyzeWindow : Window, IDisposable
             else
             {
                 isBusy = true;
-                var durations = RouletteQueries.CalculateTotalDurations(Database.Entries);
+                var durations = RouletteQueries.CalculateTotalDurations(DatabaseV2.Entries);
                 durations.Sort((a, b) => b.TotalDuration.CompareTo(a.TotalDuration));
                 resultsTotalDurations = durations;
                 totalDurationState.IsAvailable = true;
@@ -183,11 +183,11 @@ public class AnalyzeWindow : Window, IDisposable
             ImGui.TableNextColumn();
             ImGui.TableHeader("Average");
 
-            foreach (var (RouletteType, TotalDuration, AverageDuration) in resultsTotalDurations)
+            foreach (var (RouletteId, TotalDuration, AverageDuration) in resultsTotalDurations)
             {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGuiHelpers.SafeTextWrapped(RouletteType ?? "Unknown");
+                ImGuiHelpers.SafeTextWrapped(ExcelHelper.GetPoppedContentType(RouletteId));
                 ImGui.TableNextColumn();
                 ImGuiHelpers.SafeTextWrapped(TotalDuration.ToString());
                 ImGui.TableNextColumn();

@@ -7,36 +7,25 @@ namespace ContactsTracker.Query;
 
 public static class RouletteQueries
 {
-    public static List<(string? TerritoryName, string? RouletteType, int Count)> ExtractOccurrences(List<DataEntry> Entries)
+    public static List<(ushort TerritoryId, uint RouletteId, int Count)> ExtractOccurrences(List<DataEntryV2> Entries)
     {
         return [.. Entries
-            .Where(entry => entry.RouletteType != null)
+            .Where(entry => entry.RouletteId != 0)
             .Where(entry => entry.IsCompleted)
-            .GroupBy(Entries => (Entries.TerritoryName, Entries.RouletteType))
-            .Select(group => (group.Key.TerritoryName, group.Key.RouletteType, group.Count()))];
+            .GroupBy(Entries => (Entries.TerritoryId, Entries.RouletteId))
+            .Select(group => (group.Key.TerritoryId, group.Key.RouletteId, group.Count()))];
     }
 
-    public static List<(string? RouletteType, TimeSpan TotalDuration, TimeSpan AverageDuration)> CalculateTotalDurations(List<DataEntry> Entries)
+    public static List<(uint RouletteId, TimeSpan TotalDuration, TimeSpan AverageDuration)> CalculateTotalDurations(List<DataEntryV2> Entries)
     {
         return [.. Entries
-            .Where(entry => entry.RouletteType != null)
-            .Where(entry => entry.IsCompleted && entry.endAt != null)
-            .GroupBy(entry => entry.RouletteType)
+            .Where(entry => entry.RouletteId != 0)
+            .Where(entry => entry.IsCompleted && entry.EndAt != DateTime.MinValue)
+            .GroupBy(entry => entry.RouletteId)
             .Select(group =>
             {
                 var validDurations = group
-                    .Select(entry =>
-                    {
-                        if (TimeSpan.TryParse(entry.beginAt, out var beginAt) && TimeSpan.TryParse(entry.endAt, out var endAt))
-                        {
-                            if (endAt < beginAt) // If the roulette ends on the next day
-                            {
-                                endAt = endAt.Add(TimeSpan.FromDays(1));
-                            }
-                            return endAt - beginAt;
-                        }
-                        return TimeSpan.Zero;
-                    })
+                    .Select(entry => entry.EndAt - entry.BeginAt)
                     .Where(duration => duration > TimeSpan.Zero)
                     .ToList();
 
@@ -45,7 +34,7 @@ public static class RouletteQueries
                     ? TimeSpan.FromTicks(validDurations.Sum(d => d.Ticks) / validDurations.Count)
                     : TimeSpan.Zero;
 
-                return (RouletteType: group.Key, TotalDuration: totalDuration, AverageDuration: averageDuration);
+                return (RouletteId: group.Key, TotalDuration: totalDuration, AverageDuration: averageDuration);
             })];
     }
 }
