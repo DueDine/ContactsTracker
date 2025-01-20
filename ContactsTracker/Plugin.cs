@@ -1,15 +1,12 @@
-using ContactsTracker.Windows;
 using ContactsTracker.Data;
-using Dalamud.Game.ClientState.Conditions;
+using ContactsTracker.Logic;
+using ContactsTracker.Windows;
 using Dalamud.Game.Command;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Lumina.Excel.Sheets;
-using System;
 
 namespace ContactsTracker;
 
@@ -36,6 +33,8 @@ public sealed class Plugin : IDalamudPlugin
 
     public readonly FileDialogManager FileDialogManager = new();
 
+    private readonly Handler handler;
+
     public Plugin()
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
@@ -46,40 +45,48 @@ public sealed class Plugin : IDalamudPlugin
         WindowSystem.AddWindow(MainWindow);
         WindowSystem.AddWindow(AnalyzeWindow);
 
+        handler = new Handler(
+            Configuration,
+            ClientState,
+            DutyState,
+            DataManager,
+            ChatGui,
+            Condition);
+
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Open Plugin\n" +
-                          "/ctracker analyze -> AnalyzeWindow\n" +
-                          "/ctracker reload -> Reload Database"
+            HelpMessage = """
+                          Open Plugin
+                          /ctracker analyze -> AnalyzeWindow
+                          /ctracker reload -> Reload Database
+                          """
         });
 
         PluginInterface.UiBuilder.Draw += DrawUI;
-
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
         PluginInterface.UiBuilder.OpenConfigUi += ToggleAnalyzeUI;
 
-        Database.Load();
-
-        ClientState.TerritoryChanged += OnTerritoryChanged;
-        ClientState.CfPop += OnCfPop;
-        ClientState.Logout += OnLogout;
-        DutyState.DutyStarted += OnDutyStarted;
-        DutyState.DutyCompleted += OnDutyCompleted;
+        if (Configuration.Version != 1) // Then migrate from old data to new data
+        {
+            Database.Load();
+            if (Migration.EntryV1ToV2.Migrate())
+            {
+                Configuration.Version = 1;
+                Configuration.Save();
+            }
+        }
+        else
+        {
+            DatabaseV2.Load();
+        }
     }
 
     public void Dispose()
     {
         WindowSystem.RemoveAllWindows();
-
         MainWindow.Dispose();
-
+        handler.Dispose();
         CommandManager.RemoveHandler(CommandName);
-
-        ClientState.TerritoryChanged -= OnTerritoryChanged;
-        ClientState.CfPop -= OnCfPop;
-        ClientState.Logout -= OnLogout;
-        DutyState.DutyStarted -= OnDutyStarted;
-        DutyState.DutyCompleted -= OnDutyCompleted;
     }
 
     private void OnCommand(string command, string args)
@@ -92,164 +99,12 @@ public sealed class Plugin : IDalamudPlugin
                     AnalyzeWindow.Toggle();
                     break;
                 case "reload":
-                    Database.Load();
+                    // Database.Load();
                     break;
                 default:
                     MainWindow.Toggle();
                     break;
             }
-        }
-    }
-
-    private void OnLogout(int type, int code)
-    {
-        if (DataEntry.Instance != null && DataEntry.Instance.IsCompleted == false && !string.IsNullOrEmpty(DataEntry.Instance.TerritoryName))
-        {
-            Database.SaveInProgressEntry(DataEntry.Instance);
-        }
-    }
-
-    private void OnTerritoryChanged(ushort territoryID)
-    {
-        if (Configuration.EnableLogging == false)
-        {
-            return;
-        }
-
-        if (Condition[ConditionFlag.DutyRecorderPlayback])
-        {
-            return;
-        }
-
-        var newTerritory = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(territoryID).ContentFinderCondition.Value;
-        var territoryName = newTerritory?.Name.ExtractText();
-
-        if (Database.isDirty)
-        {
-            if (!string.IsNullOrEmpty(territoryName))
-            {
-                var entry = Database.LoadFromTempPath();
-                if (entry != null && entry.TerritoryName == territoryName)
-                {
-                    DataEntry.Initialize(entry);
-                }
-                else
-                {
-                    // ignore
-                }
-                Database.isDirty = false; // False whatever the result
-            }
-            return;
-        }
-
-        if (DataEntry.Instance == null)
-        {
-            if (!string.IsNullOrEmpty(territoryName))
-            {
-                if (Configuration.OnlyDutyRoulette) // If DR, already initialized by CFPop
-                {
-                    return;
-                }
-                DataEntry.Initialize(null, null, false);
-            }
-            else
-            {
-                return;
-            }
-        }
-
-        if (DataEntry.Instance!.TerritoryName == null)
-        {
-            DataEntry.Instance.TerritoryName = territoryName;
-            DataEntry.Instance.beginAt = DateTime.Now.ToString("T"); // Refresh
-            var localPlayer = ClientState.LocalPlayer;
-            if (localPlayer != null) // Seems like Player available after TerritoryChanged. Have to rely OnDutyCompleted.
-            {
-                DataEntry.Instance.jobName = UpperFirst(localPlayer.ClassJob.Value.Name.ExtractText());
-            }
-        }
-        else if (DataEntry.Instance.TerritoryName == territoryName) // Intened to handle rejoin. 
-        {
-        }
-        else
-        {
-            if (Configuration.KeepIncompleteEntry)
-            {
-                DataEntry.finalize(Configuration);
-            }
-            else
-            {
-                DataEntry.Reset();
-            }
-        }
-
-    }
-
-    private void OnDutyStarted(object? sender, ushort territoryID)
-    {
-        if (Configuration.EnableLogging == false)
-        {
-            return;
-        }
-
-
-        if (DataEntry.Instance != null)
-        {
-            var territoryName = DataManager.GetExcelSheet<TerritoryType>()?.GetRow(territoryID).ContentFinderCondition.Value.Name.ExtractText();
-            if (DataEntry.Instance.TerritoryName == territoryName)
-            {
-                DataEntry.Instance.beginAt = DateTime.Now.ToString("T"); // More accurate
-            }
-        }
-        return;
-    }
-
-    private void OnDutyCompleted(object? sender, ushort territoryID)
-    {
-        if (Configuration.EnableLogging == false)
-        {
-            return;
-        }
-
-
-        if (DataEntry.Instance == null)
-        {
-            return;
-        }
-
-        DataEntry.Instance.IsCompleted = true;
-        DataEntry.finalize(Configuration);
-
-        if (Configuration.PrintToChat)
-        {
-            ChatGui.Print("ContactsTracker Record Completed");
-        }
-
-        if (Database.Entries.Count >= Configuration.ArchiveWhenEntriesExceed)
-        {
-            Database.Archive(Configuration);
-        }
-    }
-
-    private unsafe void OnCfPop(ContentFinderCondition condition)
-    {
-        if (Configuration.EnableLogging == false)
-        {
-            return;
-        }
-
-
-        var queueInfo = ContentsFinder.Instance()->QueueInfo;
-        if (queueInfo.PoppedContentType == ContentsFinderQueueInfo.PoppedContentTypes.Roulette)
-        {
-            var type = DataManager.GetExcelSheet<ContentRoulette>()?.GetRow(queueInfo.PoppedContentId).Name.ExtractText();
-            DataEntry.Reset(); // Reset. Some may choose to abandon the roulette
-            DataEntry.Initialize(null, type, false);
-        }
-        else
-        {
-            DataEntry.Reset(); // Handle case where user DR -> Abandon -> Non DR vice versa
-            // DataEntry.Initialize(null, "Normal", false);
         }
     }
 

@@ -1,5 +1,4 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
-using Lumina.Excel.Sheets;
 using System;
 
 namespace ContactsTracker.Data;
@@ -73,7 +72,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
                     if (partyMember != null)
                     {
                         var worldID = groupManager->GetPartyMemberByContentId((ulong)partyMember.ContentId)->HomeWorld;
-                        var worldName = Plugin.DataManager.GetExcelSheet<World>()?.GetRow(worldID).Name.ExtractText();
+                        var worldName = ExcelHelper.GetWorldName(worldID);
                         names[i] = $"{partyMember.Name} @ {worldName}";
                         if (configuration.LogPartyClass)
                         {
