@@ -17,7 +17,7 @@ public static class EntryLogic
 
         if (!configuration.EnableLogParty)
         {
-            entry.PartyMembers[0] = "Party Logging Disabled For this Entry";
+            entry.PartyMembers.Add("Party Logging Disabled For this Entry");
         }
         else
         {
@@ -29,7 +29,7 @@ public static class EntryLogic
                     DataEntryV2.Reset();
                     return;
                 }
-                entry.PartyMembers[0] = "Solo";
+                entry.PartyMembers.Add("Solo");
             }
 
             if (numOfParty > 1 && numOfParty <= 8)
@@ -51,12 +51,11 @@ public static class EntryLogic
                         names[i] += $" ({jobName})";
                     }
 
-                    entry.PartyMembers[i] = names[i];
+                    entry.PartyMembers.Add(names[i]);
                 }
             }
         }
-
-        // Database.InsertEntry(entry);
+        DatabaseV2.InsertEntry(entry);
         DataEntryV2.Reset();
     }
 }

@@ -18,6 +18,8 @@ public class DatabaseV2
 
     public static List<DataEntryV2> Entries { get; private set; } = [];
 
+    public static int Count => Entries.Count;
+
     public static void InsertEntry(DataEntryV2 entry)
     {
         Entries.Add(entry);
@@ -43,6 +45,16 @@ public class DatabaseV2
         {
             Plugin.Logger.Error("Failed to load data!");
         }
+    }
+
+    public static bool RemoveEntry(DataEntryV2 entry)
+    {
+        if (Entries.Remove(entry))
+        {
+            Save();
+            return true;
+        }
+        return false;
     }
 
     public static DataEntryV2? LoadInProgressEntry()
@@ -142,7 +154,7 @@ public class DatabaseV2
                     BeginAt = DateTime.Parse(beginAt!),
                     EndAt = DateTime.Parse(endAt!),
                     PlayerJobAbbr = playerJobAbbr!,
-                    PartyMembers = partyMembers!.Split('|')
+                    PartyMembers = [.. partyMembers!.Split('|')]
                 };
                 importedEntries.Add(entry);
             }

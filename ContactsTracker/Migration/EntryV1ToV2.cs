@@ -1,6 +1,7 @@
 using ContactsTracker.Data;
 using Lumina.Excel.Sheets;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ContactsTracker.Migration;
@@ -14,6 +15,7 @@ public class EntryV1ToV2
         var TerritoryExcel = Plugin.DataManager.GetExcelSheet<TerritoryType>();
 
         var oldEntries = Database.Entries;
+        if (oldEntries.Count == 0) return true;
 
         try
         {
@@ -47,8 +49,8 @@ public class EntryV1ToV2
                 {
                     var members = entry.partyMembers.Split('|');
                     if (members.Length > 1)
-                        members = [.. members.Take(members.Length - 1).Select(m => m.Trim())];
-                    DataEntryV2.Instance!.PartyMembers = members;
+                        members = members.Take(members.Length - 1).Select(m => m.Trim()).ToArray();
+                    DataEntryV2.Instance!.PartyMembers = new List<string>(members);
                 }
                 DatabaseV2.InsertEntry(DataEntryV2.Instance);
             }

@@ -16,7 +16,6 @@ public class MainWindow : Window, IDisposable
 {
     private Plugin Plugin;
     private int selectedTab = 0;
-    // private string commentBuffer = string.Empty;
     private bool isFileDialogOpen = false;
     private bool doubleCheck = false;
     private bool enableSearch = false;
@@ -235,7 +234,7 @@ public class MainWindow : Window, IDisposable
             ImGui.Spacing();
 
             ImGuiHelpers.SafeTextWrapped("Party Members:");
-            if (entry.PartyMembers.Length == 0)
+            if (entry.PartyMembers.Count == 0)
             {
                 ImGui.SameLine();
                 ImGuiHelpers.SafeTextWrapped("N/A");
@@ -244,7 +243,8 @@ public class MainWindow : Window, IDisposable
             {
                 foreach (var member in entry.PartyMembers)
                 {
-                    ImGui.BulletText(member);
+                    if (!string.IsNullOrEmpty(member))
+                        ImGui.BulletText(member);
                 }
             }
             ImGui.Spacing();
@@ -253,12 +253,11 @@ public class MainWindow : Window, IDisposable
             {
                 if (Plugin.KeyState[VirtualKey.CONTROL])
                 {
-                    entries.RemoveAt(selectedTab);
-                    DatabaseV2.Save();
+                    DatabaseV2.RemoveEntry(entry);
 
-                    if (selectedTab >= entries.Count)
+                    if (selectedTab >= DatabaseV2.Count)
                     {
-                        selectedTab = Math.Max(-1, entries.Count - 1);
+                        selectedTab = Math.Max(-1, DatabaseV2.Count - 1);
                     }
                 }
             }
@@ -493,6 +492,9 @@ public class MainWindow : Window, IDisposable
             {
                 ImGui.SetTooltip("Show the button to delete all active entries at Data Tab.");
             }
+
+            ImGuiHelpers.ScaledDummy(5f);
+            ImGuiHelpers.SafeTextWrapped($"Configuration Version: {Plugin.Configuration.Version}");
         }
     }
 

@@ -1,5 +1,6 @@
 using ContactsTracker.Logic;
 using System;
+using System.Collections.Generic;
 
 namespace ContactsTracker.Data;
 
@@ -13,7 +14,7 @@ public class DataEntryV2(ushort territoryId, uint rouletteId)
     public DateTime BeginAt { get; set; } = DateTime.Now;
     public DateTime EndAt { get; set; } = DateTime.MinValue;
     public string PlayerJobAbbr { get; set; } = string.Empty;
-    public string[] PartyMembers { get; set; } = []; // Flattened to string when saved to CSV
+    public List<string> PartyMembers { get; set; } = [];
 
     public static DataEntryV2? Instance { get; private set; }
 
