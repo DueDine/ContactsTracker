@@ -10,12 +10,15 @@ namespace ContactsTracker.Logic;
 
 public class Handler
 {
+
+#pragma warning disable IDE1006
     private readonly Configuration Configuration;
     private readonly IClientState ClientState;
     private readonly IDutyState DutyState;
     private readonly IDataManager DataManager;
     private readonly IChatGui ChatGui;
     private readonly ICondition Condition;
+#pragma warning restore IDE1006
 
     public Handler(
         Configuration configuration,
@@ -160,7 +163,7 @@ public class Handler
 
         if (Configuration.PrintToChat)
         {
-            ChatGui.Print("ContactsTracker Record Completed");
+            ChatGui.Print("Recorded", "ContactsTracker");
         }
     }
 

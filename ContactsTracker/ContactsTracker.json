@@ -1,8 +1,8 @@
 {
     "Author": "Due",
     "Name": "ContactsTracker",
-    "Punchline": "Help you Record Duty Completeion.",
-    "Description": "Record Duty and Party Member.\nRemember to check Settings Tab.\nUse the Settings button to enter analyze window.",
+    "Punchline": "Help you record duty and who you met.",
+    "Description": "Remember to change setting according to your need.\nUse the Settings button to enter analyze window.",
     "ApplicableVersion": "any",
     "Tags": [
         "plugin",
