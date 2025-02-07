@@ -4,6 +4,7 @@
     "Punchline": "Help you record duty and who you met.",
     "Description": "Remember to change setting according to your need.\nUse the Settings button to enter analyze window.",
     "ApplicableVersion": "any",
+    "RepoUrl": "https://github.com/DueDine/ContactsTracker",
     "Tags": [
         "plugin",
         "track",

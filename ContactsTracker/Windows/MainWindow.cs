@@ -417,6 +417,8 @@ public class MainWindow : Window, IDisposable
 
             ImGuiHelpers.ScaledDummy(5f);
             ImGuiHelpers.SafeTextWrapped($"Configuration Version: {Plugin.Configuration.Version}");
+            ImGuiHelpers.SafeTextWrapped($"Database Version: {DatabaseV2.Version}");
+            ImGuiHelpers.SafeTextWrapped($"Plugin Version: {Plugin.PluginInterface.Manifest.AssemblyVersion}");
         }
     }
 
