@@ -58,4 +58,11 @@ public static class EntryLogic
         DatabaseV2.InsertEntry(entry);
         DataEntryV2.Reset();
     }
+
+    public static void EarlyEndRecord(Configuration configuration)
+    {
+        if (DataEntryV2.Instance == null) return;
+        DatabaseV2.InsertEntry(DataEntryV2.Instance);
+        DataEntryV2.Reset();
+    }
 }
