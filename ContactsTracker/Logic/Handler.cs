@@ -121,7 +121,7 @@ public class Handler
         {
             if (Configuration.KeepIncompleteEntry)
             {
-                DataEntryV2.EndRecord(Configuration);
+                EntryLogic.EarlyEndRecord(Configuration);
             }
             else
             {

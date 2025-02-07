@@ -18,8 +18,6 @@ public class MainWindow : Window, IDisposable
     private int selectedTab = 0;
     private bool isFileDialogOpen = false;
     private bool doubleCheck = false;
-    private bool enableSearch = false;
-    private string searchBuffer = string.Empty;
 
     public MainWindow(Plugin plugin)
         : base("Contacts Tracker", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
@@ -148,13 +146,6 @@ public class MainWindow : Window, IDisposable
     private void DrawHistoryTab()
     {
         var entries = DatabaseV2.Entries;
-        /*
-        if (ImGui.Button("Enable / Disable Search Function"))
-        {
-            enableSearch = !enableSearch;
-            searchBuffer = string.Empty;
-        }
-        */
         if (entries.Count == 0)
         {
             ImGuiHelpers.SafeTextWrapped("No record yet.");
@@ -167,39 +158,6 @@ public class MainWindow : Window, IDisposable
         {
             if (!child) return;
 
-            /*
-            if (enableSearch)
-            {
-                ImGui.Spacing();
-                if (ImGui.InputText("Search", ref searchBuffer, 50))
-                {
-                    selectedTab = Math.Max(-1, entries.Count - 1); // Reset to last entry
-                }
-                ImGui.Spacing();
-                if (!string.IsNullOrEmpty(searchBuffer))
-                {
-                    entries = entries
-                    .Where(entry =>
-                        (entry.TerritoryName?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (entry.RouletteType?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (entry.Date?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (entry.beginAt?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (entry.endAt?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (entry.jobName?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (entry.partyMembers?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (entry.comment?.Contains(searchBuffer, StringComparison.OrdinalIgnoreCase) ?? false)
-                ).ToList();
-                    if (selectedTab >= entries.Count)
-                        selectedTab = Math.Max(-1, entries.Count - 1);
-                }
-
-                if (selectedTab == -1)
-                {
-                    ImGuiHelpers.SafeTextWrapped("No record found.");
-                    return;
-                }
-            }
-            */
             entries = [.. entries.OrderBy(entry => entry.BeginAt)];
             for (var i = entries.Count - 1; i >= 0; i--)
             {
@@ -412,43 +370,7 @@ public class MainWindow : Window, IDisposable
             {
                 Plugin.FileDialogManager.Draw();
             }
-            /*
-            ImGui.Spacing();
 
-            var autoArchive = Plugin.Configuration.ArchiveOldEntries;
-            if (ImGui.Checkbox("Enable Auto Archive", ref autoArchive))
-            {
-                Plugin.Configuration.ArchiveOldEntries = autoArchive;
-                Plugin.Configuration.Save();
-            }
-
-            if (ImGui.IsItemHovered())
-            {
-                ImGui.SetTooltip("Do not enable this unless very limited storage.");
-            }
-
-            if (autoArchive)
-            {
-                ImGui.Spacing();
-
-                var archiveLimit = Plugin.Configuration.ArchiveWhenEntriesExceed;
-                if (ImGui.InputInt("Max Number of Active Entries", ref archiveLimit))
-                {
-                    Plugin.Configuration.ArchiveWhenEntriesExceed = archiveLimit;
-                    Plugin.Configuration.Save();
-                }
-
-                ImGui.Spacing();
-
-                var archiveKeep = Plugin.Configuration.ArchiveKeepEntries;
-                if (ImGui.InputInt("Keep Newest", ref archiveKeep))
-                {
-                    Plugin.Configuration.ArchiveKeepEntries = archiveKeep;
-                    Plugin.Configuration.Save();
-                }
-
-            }
-            */
             ImGui.Spacing();
 
             if (Plugin.Configuration.EnableDeleteAll)
