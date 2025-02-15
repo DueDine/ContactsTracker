@@ -48,6 +48,7 @@ jobs:
             ContactsTracker/bin/x64/Release/*
 
       - name: Attestation
+        if: github.ref == 'refs/heads/master'
         uses: actions/attest-build-provenance@v2
         with:
           subject-name: ContactsTracker.zip
