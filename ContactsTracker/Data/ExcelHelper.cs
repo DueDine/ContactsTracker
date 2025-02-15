@@ -22,4 +22,9 @@ public static class ExcelHelper
         return sheet.GetRow(worldID).Name.ExtractText();
     }
 
+    public static string GetRouletteName(uint rouletteID)
+    {
+        var sheet = Plugin.DataManager.GetExcelSheet<ContentRoulette>();
+        return sheet.GetRow(rouletteID).Name.ExtractText();
+    }
 }

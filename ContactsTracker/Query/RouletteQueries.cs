@@ -37,4 +37,14 @@ public static class RouletteQueries
                 return (RouletteId: group.Key, TotalDuration: totalDuration, AverageDuration: averageDuration);
             })];
     }
+
+    public static List<(ushort TerritoryId, int Count)> OccurrencesByRoulette(List<DataEntryV2> Entries, uint rouletteId)
+    {
+        return [.. Entries
+            .Where(entry => entry.RouletteId == rouletteId)
+            .Where(entry => entry.IsCompleted)
+            .GroupBy(entry => entry.TerritoryId)
+            .Select(group => (group.Key, group.Count()))];
+    }
+
 }
