@@ -107,11 +107,6 @@ public class Handler
         {
             DataEntryV2.Instance.TerritoryId = territoryID;
             DataEntryV2.Instance.BeginAt = DateTime.Now; // Refresh
-            var localPlayer = ClientState.LocalPlayer;
-            if (localPlayer != null)
-            {
-                DataEntryV2.Instance.PlayerJobAbbr = localPlayer.ClassJob.Value.Name.ExtractText();
-            }
         }
         else if (DataEntryV2.Instance.TerritoryId == territoryID) // Intended to handle rejoin
         {
@@ -141,7 +136,7 @@ public class Handler
         {
             if (DataEntryV2.Instance.TerritoryId == territoryID)
             {
-                DataEntryV2.Instance.BeginAt = DateTime.Now; // More accurate
+                EntryLogic.StartRecord(DataEntryV2.Instance, Configuration);
             }
         }
     }
