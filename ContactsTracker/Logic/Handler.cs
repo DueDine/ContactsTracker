@@ -2,6 +2,7 @@ using ContactsTracker.Data;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Lumina.Excel.Sheets;
 using System;
 
@@ -107,11 +108,6 @@ public class Handler
         {
             DataEntryV2.Instance.TerritoryId = territoryID;
             DataEntryV2.Instance.BeginAt = DateTime.Now; // Refresh
-            var localPlayer = ClientState.LocalPlayer;
-            if (localPlayer != null)
-            {
-                DataEntryV2.Instance.PlayerJobAbbr = localPlayer.ClassJob.Value.Name.ExtractText();
-            }
         }
         else if (DataEntryV2.Instance.TerritoryId == territoryID) // Intended to handle rejoin
         {
@@ -141,7 +137,7 @@ public class Handler
         {
             if (DataEntryV2.Instance.TerritoryId == territoryID)
             {
-                DataEntryV2.Instance.BeginAt = DateTime.Now; // More accurate
+                EntryLogic.StartRecord(DataEntryV2.Instance, Configuration);
             }
         }
     }
@@ -174,11 +170,11 @@ public class Handler
             return;
         }
 
-        var queueInfo = ContentsFinder.Instance()->QueueInfo;
-        if (queueInfo.PoppedContentType == ContentsFinderQueueInfo.PoppedContentTypes.Roulette)
+        var queueEntry = ContentsFinder.Instance()->QueueInfo.PoppedQueueEntry;
+        if (queueEntry.ContentType == ContentsId.ContentsType.Roulette)
         {
             DataEntryV2.Reset(); // Reset. Some may choose to abandon the roulette
-            DataEntryV2.Initialize(0, queueInfo.PoppedContentId);
+            DataEntryV2.Initialize(0, queueEntry.ConditionId);
         }
         else
         {

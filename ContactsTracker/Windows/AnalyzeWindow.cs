@@ -23,12 +23,15 @@ public class AnalyzeWindow : Window, IDisposable
 
     private readonly QueryState topXState = new();
     private readonly QueryState totalDurationState = new();
+    private readonly QueryState byRouletteState = new();
 
     private bool isBusy = false;
     private int topX = 0;
+    private RouletteType selectedRoulette = RouletteType.Leveling;
 
     private List<(ushort TerritoryId, uint RouletteId, int Count)> resultsExtractOccurrences = [];
     private List<(uint RouletteId, TimeSpan TotalDuration, TimeSpan AverageDuration)> resultsTotalDurations = [];
+    private List<(ushort TerritoryId, int Count)> resultsByRoulette = [];
 
     public AnalyzeWindow(Plugin plugin)
     : base("Analyze - Still developing", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
@@ -51,6 +54,7 @@ public class AnalyzeWindow : Window, IDisposable
 
         DrawTopXQuery();
         DrawTotalDurationQuery();
+        DrawByRouletteQuery();
     }
 
     private void DrawTopXQuery()
@@ -195,4 +199,95 @@ public class AnalyzeWindow : Window, IDisposable
             }
         }
     }
+
+    private void DrawByRouletteQuery()
+    {
+        if (!ImGui.CollapsingHeader("Frequency of Maps of each Roulette")) return;
+
+        ImGui.SetNextItemWidth(ImGui.CalcTextSize("Duty Roulette: High-level Dungeons").X + 50);
+        using (var combo = ImRaii.Combo("##ByRoulette", ExcelHelper.GetRouletteName((uint)selectedRoulette)))
+        {
+            if (combo.Success)
+            {
+                foreach (var roulette in Enum.GetValues<RouletteType>())
+                {
+                    if (ImGui.Selectable(ExcelHelper.GetRouletteName((uint)roulette), selectedRoulette == roulette))
+                    {
+                        selectedRoulette = roulette;
+                        byRouletteState.IsClicked = false;
+                        byRouletteState.IsAvailable = false;
+                    }
+                }
+            }
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("Query##Q3"))
+        {
+            byRouletteState.IsClicked = true;
+            byRouletteState.IsAvailable = false;
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("Reset##R3"))
+        {
+            byRouletteState.IsClicked = false;
+            byRouletteState.IsAvailable = false;
+            resultsByRoulette.Clear();
+        }
+
+        if (byRouletteState.IsClicked)
+        {
+            if (isBusy)
+            {
+                ImGuiHelpers.SafeTextWrapped("Processing...");
+            }
+            else
+            {
+                isBusy = true;
+                var occurrences = RouletteQueries.OccurrencesByRoulette(DatabaseV2.Entries, (uint)selectedRoulette);
+                occurrences.Sort((a, b) => b.Count.CompareTo(a.Count));
+                resultsByRoulette = occurrences;
+                byRouletteState.IsAvailable = true;
+                isBusy = false;
+                byRouletteState.IsClicked = false;
+            }
+        }
+
+        if (byRouletteState.IsAvailable)
+        {
+            if (resultsByRoulette.Count == 0)
+            {
+                ImGuiHelpers.SafeTextWrapped("No data available.");
+                return;
+            }
+            using var table = ImRaii.Table("##ByRoulette", 2);
+            if (!table) return;
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Map");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Times");
+            foreach (var (TerritoryId, Count) in resultsByRoulette)
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGuiHelpers.SafeTextWrapped(ExcelHelper.GetTerritoryName(TerritoryId));
+                ImGui.TableNextColumn();
+                ImGuiHelpers.SafeTextWrapped(Count.ToString());
+            }
+        }
+    }
+}
+
+internal enum RouletteType
+{
+    Leveling = 1,
+    HighLevel = 2,
+    Scenario = 3,
+    Guildhests = 4,
+    Expert = 5,
+    Trials = 6,
+    Frontline = 7,
+    LevelCap = 8,
+    Mentor = 9,
+    AllianceRaid = 15,
+    NormalRaid = 17,
 }
