@@ -88,18 +88,21 @@ public class Handler
             return;
         }
 
-        if (DataEntryV2.Instance == null)
+        if (DataEntryV2.Instance == null) return;
+
+        if (DataEntryV2.Instance.RouletteId == 0 && DataEntryV2.Instance.TerritoryId == 0)
         {
             if (!string.IsNullOrEmpty(territoryName))
             {
                 if (Configuration.OnlyDutyRoulette) // If DR, already initialized by CFPop
                 {
+                    DataEntryV2.Reset();
                     return;
                 }
-                DataEntryV2.Initialize(territoryID, 0);
             }
             else
             {
+                DataEntryV2.Reset();
                 return;
             }
         }
@@ -170,15 +173,19 @@ public class Handler
             return;
         }
 
-        var queueEntry = ContentsFinder.Instance()->QueueInfo.PoppedQueueEntry;
+        var queueInfo = ContentsFinder.Instance()->QueueInfo;
+        var queueEntry = queueInfo.PoppedQueueEntry;
         if (queueEntry.ContentType == ContentsId.ContentsType.Roulette)
         {
             DataEntryV2.Reset(); // Reset. Some may choose to abandon the roulette
             DataEntryV2.Initialize(0, queueEntry.ConditionId);
+            DataEntryV2.SetSettings(queueInfo.PoppedContentIsUnrestrictedParty, queueInfo.PoppedContentIsMinimalIL, queueInfo.PoppedContentIsLevelSync, queueInfo.PoppedContentIsSilenceEcho, queueInfo.PoppedContentIsExplorerMode);
         }
         else
         {
             DataEntryV2.Reset(); // Handle case where user DR -> Abandon -> Non DR vice versa
+            DataEntryV2.Initialize(0, 0);
+            DataEntryV2.SetSettings(queueInfo.PoppedContentIsUnrestrictedParty, queueInfo.PoppedContentIsMinimalIL, queueInfo.PoppedContentIsLevelSync, queueInfo.PoppedContentIsSilenceEcho, queueInfo.PoppedContentIsExplorerMode);
         }
     }
 }
