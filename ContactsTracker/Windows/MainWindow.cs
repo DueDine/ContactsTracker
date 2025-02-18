@@ -158,6 +158,13 @@ public class MainWindow : Window, IDisposable
         {
             if (!child) return;
 
+            ImGui.SetNextItemWidth(ImGui.GetWindowWidth() * 0.3f);
+            if (ImGui.Button("Open Analyze"))
+            {
+                Plugin.ToggleAnalyzeUI();
+            }
+            ImGui.Separator();
+
             entries = [.. entries.OrderBy(entry => entry.BeginAt)];
             for (var i = entries.Count - 1; i >= 0; i--)
             {
