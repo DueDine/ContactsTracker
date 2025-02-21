@@ -1,5 +1,6 @@
 using ContactsTracker.Data;
 using ContactsTracker.Query;
+using ContactsTracker.Resources;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
@@ -49,7 +50,7 @@ public class AnalyzeWindow : Window, IDisposable
 
     public override void Draw()
     {
-        ImGuiHelpers.SafeTextWrapped("If you have a suggestion for a new query, please let me know.");
+        ImGuiHelpers.SafeTextWrapped(Language.AnalyzeFeedback);
         ImGuiHelpers.ScaledDummy(5f);
 
         DrawTopXQuery();
@@ -59,7 +60,7 @@ public class AnalyzeWindow : Window, IDisposable
 
     private void DrawTopXQuery()
     {
-        if (!ImGui.CollapsingHeader("Top X pair of Roulette and Map")) return;
+        if (!ImGui.CollapsingHeader(Language.QueryTopX)) return;
 
         ImGui.SetNextItemWidth(100);
         if (ImGui.InputInt("##TopX", ref topX))
@@ -68,13 +69,13 @@ public class AnalyzeWindow : Window, IDisposable
             topXState.IsClicked = false;
         }
         ImGui.SameLine();
-        if (ImGui.Button("Query##Q1"))
+        if (ImGui.Button($"{Language.ButtonQuery}###Q1"))
         {
             topXState.IsClicked = true;
             topXState.IsAvailable = false;
         }
         ImGui.SameLine();
-        if (ImGui.Button("Reset##R1"))
+        if (ImGui.Button($"{Language.ButtonReset}###R1"))
         {
             topXState.IsClicked = false;
             topXState.IsAvailable = false;
@@ -85,7 +86,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             if (isBusy)
             {
-                ImGuiHelpers.SafeTextWrapped("Processing...");
+                ImGuiHelpers.SafeTextWrapped(Language.QueryInProcess);
             }
             else
             {
@@ -107,7 +108,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             if (resultsExtractOccurrences.Count == 0)
             {
-                ImGuiHelpers.SafeTextWrapped("No data available.");
+                ImGuiHelpers.SafeTextWrapped(Language.QueryNoResult);
                 return;
             }
 
@@ -136,15 +137,15 @@ public class AnalyzeWindow : Window, IDisposable
 
     private void DrawTotalDurationQuery()
     {
-        if (!ImGui.CollapsingHeader("How much time for each roulette")) return;
+        if (!ImGui.CollapsingHeader(Language.QuerySpentTime)) return;
 
-        if (ImGui.Button("Query##Q2"))
+        if (ImGui.Button($"{Language.ButtonQuery}###Q2"))
         {
             totalDurationState.IsClicked = true;
             totalDurationState.IsAvailable = false;
         }
         ImGui.SameLine();
-        if (ImGui.Button("Reset##R2"))
+        if (ImGui.Button($"{Language.ButtonReset}###R2"))
         {
             totalDurationState.IsClicked = false;
             totalDurationState.IsAvailable = false;
@@ -155,7 +156,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             if (isBusy)
             {
-                ImGuiHelpers.SafeTextWrapped("Processing...");
+                ImGuiHelpers.SafeTextWrapped(Language.QueryInProcess);
             }
             else
             {
@@ -173,7 +174,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             if (resultsTotalDurations.Count == 0)
             {
-                ImGuiHelpers.SafeTextWrapped("No data available.");
+                ImGuiHelpers.SafeTextWrapped(Language.QueryNoResult);
                 return;
             }
 
@@ -202,7 +203,7 @@ public class AnalyzeWindow : Window, IDisposable
 
     private void DrawByRouletteQuery()
     {
-        if (!ImGui.CollapsingHeader("Frequency of Maps of each Roulette")) return;
+        if (!ImGui.CollapsingHeader(Language.QueryRouletteFrequency)) return;
 
         ImGui.SetNextItemWidth(ImGui.CalcTextSize("Duty Roulette: High-level Dungeons").X + 50);
         using (var combo = ImRaii.Combo("##ByRoulette", ExcelHelper.GetRouletteName((uint)selectedRoulette)))
@@ -221,13 +222,13 @@ public class AnalyzeWindow : Window, IDisposable
             }
         }
         ImGui.SameLine();
-        if (ImGui.Button("Query##Q3"))
+        if (ImGui.Button($"{Language.ButtonQuery}###Q3"))
         {
             byRouletteState.IsClicked = true;
             byRouletteState.IsAvailable = false;
         }
         ImGui.SameLine();
-        if (ImGui.Button("Reset##R3"))
+        if (ImGui.Button($"{Language.ButtonReset}###R3"))
         {
             byRouletteState.IsClicked = false;
             byRouletteState.IsAvailable = false;
@@ -238,7 +239,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             if (isBusy)
             {
-                ImGuiHelpers.SafeTextWrapped("Processing...");
+                ImGuiHelpers.SafeTextWrapped(Language.QueryInProcess);
             }
             else
             {
@@ -256,7 +257,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             if (resultsByRoulette.Count == 0)
             {
-                ImGuiHelpers.SafeTextWrapped("No data available.");
+                ImGuiHelpers.SafeTextWrapped(Language.QueryNoResult);
                 return;
             }
             using var table = ImRaii.Table("##ByRoulette", 2);

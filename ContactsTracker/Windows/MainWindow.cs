@@ -1,4 +1,5 @@
 using ContactsTracker.Data;
+using ContactsTracker.Resources;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
@@ -38,28 +39,28 @@ public class MainWindow : Window, IDisposable
         using var tabBar = ImRaii.TabBar("MainTabBar");
         if (!tabBar) return;
 
-        using (var activeTab = ImRaii.TabItem("Active"))
+        using (var activeTab = ImRaii.TabItem(Language.TabNameActive))
         {
             if (activeTab)
             {
                 DrawActiveTab();
             }
         }
-        using (var historyTab = ImRaii.TabItem("History"))
+        using (var historyTab = ImRaii.TabItem(Language.TabNameHistory))
         {
             if (historyTab)
             {
                 DrawHistoryTab();
             }
         }
-        using (var settingsTab = ImRaii.TabItem("Settings"))
+        using (var settingsTab = ImRaii.TabItem(Language.TabNameSetting))
         {
             if (settingsTab)
             {
                 DrawSettingsTab();
             }
         }
-        using (var aboutTab = ImRaii.TabItem("About"))
+        using (var aboutTab = ImRaii.TabItem(Language.TabNameAbout))
         {
             if (aboutTab)
             {
@@ -72,14 +73,14 @@ public class MainWindow : Window, IDisposable
     {
         if (Plugin.Configuration.EnableLogging == false)
         {
-            ImGuiHelpers.SafeTextWrapped("Logging Disabled. Read-Only Mode.");
+            ImGuiHelpers.SafeTextWrapped(Language.WarningWhenDisableLogging);
             return;
         }
 
         var entries = DatabaseV2.Entries;
         if (entries.Count == 0 && DataEntryV2.Instance == null)
         {
-            ImGuiHelpers.SafeTextWrapped("No record yet.");
+            ImGuiHelpers.SafeTextWrapped(Language.NotAnyRecord);
             return;
         }
 
@@ -87,40 +88,40 @@ public class MainWindow : Window, IDisposable
         if (DataEntryV2.Instance != null && DataEntryV2.Instance.TerritoryId != 0)
         {
             entry = DataEntryV2.Instance;
-            ImGuiHelpers.SafeTextWrapped("Currently Logging");
+            ImGuiHelpers.SafeTextWrapped(Language.WhenLogging);
         }
         else if (entry != default)
         {
-            ImGuiHelpers.SafeTextWrapped("No Active Log. Display Last Entry Instead.");
+            ImGuiHelpers.SafeTextWrapped(Language.NotActiveButHaveHistory);
         }
         else
         {
-            ImGuiHelpers.SafeTextWrapped("No Active Log.");
+            ImGuiHelpers.SafeTextWrapped(Language.NotAnyRecord);
             return;
         }
 
         ImGui.Spacing();
-        ImGuiHelpers.SafeTextWrapped($"Place: {ExcelHelper.GetTerritoryName(entry.TerritoryId)}");
+        ImGuiHelpers.SafeTextWrapped($"{Language.TerritoryName}: {ExcelHelper.GetTerritoryName(entry.TerritoryId)}");
         ImGui.Spacing();
-        ImGuiHelpers.SafeTextWrapped($"Join via: {ExcelHelper.GetPoppedContentType(entry.RouletteId)}");
+        ImGuiHelpers.SafeTextWrapped($"{Language.RouletteName}: {ExcelHelper.GetPoppedContentType(entry.RouletteId)}");
         ImGui.Spacing();
         ImGuiHelpers.SafeTextWrapped($"{entry.BeginAt} - {(entry.EndAt == DateTime.MinValue ? "N/A" : entry.EndAt)}");
 
         if (entry.EndAt != DateTime.MinValue)
         {
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"Duration: {entry.EndAt.Subtract(entry.BeginAt):hh\\:mm\\:ss}");
+            ImGuiHelpers.SafeTextWrapped($"{Language.DurationOfEntry}: {entry.EndAt.Subtract(entry.BeginAt):hh\\:mm\\:ss}");
         }
         else if (Plugin.DutyState.IsDutyStarted) // Still in progress
         {
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"Duration: {DateTime.Now.Subtract(entry.BeginAt):hh\\:mm\\:ss}");
+            ImGuiHelpers.SafeTextWrapped($"{Language.DurationOfEntry}: {DateTime.Now.Subtract(entry.BeginAt):hh\\:mm\\:ss}");
         }
         ImGui.Spacing();
 
         if (DataEntryV2.Instance != null)
         {
-            if (ImGui.Button("Ignore"))
+            if (ImGui.Button(Language.IgnoreCurrentEntry))
             {
                 doubleCheck = true;
             }
@@ -128,14 +129,14 @@ public class MainWindow : Window, IDisposable
             if (doubleCheck)
             {
                 ImGui.SameLine();
-                if (ImGui.Button("Confirm Ignore"))
+                if (ImGui.Button(Language.DoubleConfirmIgnore))
                 {
                     DataEntryV2.Reset();
                     doubleCheck = false;
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button("Cancel"))
+                if (ImGui.Button(Language.CancelIgnore))
                 {
                     doubleCheck = false;
                 }
@@ -148,7 +149,7 @@ public class MainWindow : Window, IDisposable
         var entries = DatabaseV2.Entries;
         if (entries.Count == 0)
         {
-            ImGuiHelpers.SafeTextWrapped("No record yet.");
+            ImGuiHelpers.SafeTextWrapped(Language.NotAnyRecord);
             return;
         }
 
@@ -159,7 +160,7 @@ public class MainWindow : Window, IDisposable
             if (!child) return;
 
             ImGui.SetNextItemWidth(ImGui.GetWindowWidth() * 0.3f);
-            if (ImGui.Button("Open Analyze"))
+            if (ImGui.Button(Language.OpenAnalyzeWindow))
             {
                 Plugin.ToggleAnalyzeUI();
             }
@@ -187,18 +188,18 @@ public class MainWindow : Window, IDisposable
             if (!child) return;
 
             var entry = entries[selectedTab];
-            ImGuiHelpers.SafeTextWrapped($"Name: {ExcelHelper.GetTerritoryName(entry.TerritoryId)}");
+            ImGuiHelpers.SafeTextWrapped($"{Language.TerritoryName}: {ExcelHelper.GetTerritoryName(entry.TerritoryId)}");
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"Type: {ExcelHelper.GetPoppedContentType(entry.RouletteId)}");
+            ImGuiHelpers.SafeTextWrapped($"{Language.RouletteName}: {ExcelHelper.GetPoppedContentType(entry.RouletteId)}");
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"Completed?: {(entry.IsCompleted ? "Yes" : "No")}");
+            ImGuiHelpers.SafeTextWrapped($"{Language.IsEntryCompleted}: {(entry.IsCompleted ? Language.TextYes : Language.TextNo)}");
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"Time: {entry.BeginAt:yyyy-MM-dd HH:mm:ss} - {(entry.EndAt == DateTime.MinValue ? "N/A" : entry.EndAt)}");
+            ImGuiHelpers.SafeTextWrapped($"{Language.EntryTimeFromTo}: {entry.BeginAt:yyyy-MM-dd HH:mm:ss} - {(entry.EndAt == DateTime.MinValue ? "N/A" : entry.EndAt)}");
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"Job: {entry.PlayerJobAbbr}");
+            ImGuiHelpers.SafeTextWrapped($"{Language.PlayerJob}: {entry.PlayerJobAbbr}");
             ImGui.Spacing();
 
-            ImGuiHelpers.SafeTextWrapped("Party Members:");
+            ImGuiHelpers.SafeTextWrapped(Language.EntryParty);
             if (entry.PartyMembers.Count == 0)
             {
                 ImGui.SameLine();
@@ -214,7 +215,7 @@ public class MainWindow : Window, IDisposable
             }
             ImGui.Spacing();
 
-            if (ImGui.Button("Delete Entry"))
+            if (ImGui.Button(Language.DeleteHistoryEntry))
             {
                 if (Plugin.KeyState[VirtualKey.CONTROL])
                 {
@@ -231,11 +232,11 @@ public class MainWindow : Window, IDisposable
             {
                 if (!Plugin.KeyState[VirtualKey.CONTROL])
                 {
-                    ImGui.SetTooltip("Hold CTRL to Delete.");
+                    ImGui.SetTooltip(Language.DeleteHistoryEntryCtrl);
                 }
                 else
                 {
-                    ImGui.SetTooltip("This action is irreversible.");
+                    ImGui.SetTooltip(Language.DeleteHistoryEntryWarning);
                 }
             }
         }
@@ -245,10 +246,10 @@ public class MainWindow : Window, IDisposable
 
     private void DrawSettingsTab()
     {
-        if (ImGui.CollapsingHeader("General"))
+        if (ImGui.CollapsingHeader(Language.SettingTabGeneral))
         {
             var enableLogging = Plugin.Configuration.EnableLogging;
-            if (ImGui.Checkbox("Enable Logging", ref enableLogging))
+            if (ImGui.Checkbox(Language.CheckboxEnableLogging, ref enableLogging))
             {
                 Plugin.Configuration.EnableLogging = enableLogging;
                 Plugin.Configuration.Save();
@@ -256,11 +257,11 @@ public class MainWindow : Window, IDisposable
 
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip("Enable to start recording data.");
+                ImGui.SetTooltip(Language.CheckboxEnableLoggingTooltip);
             }
 
             var enableLogParty = Plugin.Configuration.EnableLogParty;
-            if (ImGui.Checkbox("Enable Log Party", ref enableLogParty))
+            if (ImGui.Checkbox(Language.CheckboxEnableLogParty, ref enableLogParty))
             {
                 Plugin.Configuration.EnableLogParty = enableLogParty;
                 Plugin.Configuration.Save();
@@ -268,7 +269,7 @@ public class MainWindow : Window, IDisposable
 
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip("Enable to log party members on completion.");
+                ImGui.SetTooltip(Language.CheckboxEnableLogPartyTooltip);
             }
 
             if (Plugin.Configuration.EnableLogParty)
@@ -276,7 +277,7 @@ public class MainWindow : Window, IDisposable
                 ImGui.SameLine();
 
                 var logPartyClass = Plugin.Configuration.LogPartyClass;
-                if (ImGui.Checkbox("Log Party Class", ref logPartyClass))
+                if (ImGui.Checkbox(Language.CheckboxEnableLogPartyClass, ref logPartyClass))
                 {
                     Plugin.Configuration.LogPartyClass = logPartyClass;
                     Plugin.Configuration.Save();
@@ -284,12 +285,12 @@ public class MainWindow : Window, IDisposable
 
                 if (ImGui.IsItemHovered())
                 {
-                    ImGui.SetTooltip("Also record their class.");
+                    ImGui.SetTooltip(Language.CheckboxEnableLogPartyClassTooltip);
                 }
             }
 
             var recordSolo = Plugin.Configuration.RecordSolo;
-            if (ImGui.Checkbox("Record Solo", ref recordSolo))
+            if (ImGui.Checkbox(Language.CheckboxEnableRecordSolo, ref recordSolo))
             {
                 Plugin.Configuration.RecordSolo = recordSolo;
                 Plugin.Configuration.Save();
@@ -297,11 +298,11 @@ public class MainWindow : Window, IDisposable
 
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip("Enable to record solo duty.");
+                ImGui.SetTooltip(Language.CheckboxEnableRecordSoloTooltip);
             }
 
             var onlyDutyRoulette = Plugin.Configuration.OnlyDutyRoulette;
-            if (ImGui.Checkbox("Only Record Duty Roulette", ref onlyDutyRoulette))
+            if (ImGui.Checkbox(Language.CheckboxEnableRecordRoulette, ref onlyDutyRoulette))
             {
                 Plugin.Configuration.OnlyDutyRoulette = onlyDutyRoulette;
                 Plugin.Configuration.Save();
@@ -309,11 +310,11 @@ public class MainWindow : Window, IDisposable
 
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip("Enable to only record duty joined by roulette.");
+                ImGui.SetTooltip(Language.CheckboxEnableRecordRouletteTooltip);
             }
 
             var keepIncompleteEntry = Plugin.Configuration.KeepIncompleteEntry;
-            if (ImGui.Checkbox("Keep Incomplete Entry", ref keepIncompleteEntry))
+            if (ImGui.Checkbox(Language.CheckboxEnableKeepEntry, ref keepIncompleteEntry))
             {
                 Plugin.Configuration.KeepIncompleteEntry = keepIncompleteEntry;
                 Plugin.Configuration.Save();
@@ -321,36 +322,20 @@ public class MainWindow : Window, IDisposable
 
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip("Keep record regardless of completion.");
+                ImGui.SetTooltip(Language.CheckboxEnableKeepEntryTooltip);
             }
         }
 
-        if (ImGui.CollapsingHeader("Output"))
+        if (ImGui.CollapsingHeader(Language.SettingTabData))
         {
-            var printToChat = Plugin.Configuration.PrintToChat;
-            if (ImGui.Checkbox("Print To Chat", ref printToChat))
-            {
-                Plugin.Configuration.PrintToChat = printToChat;
-                Plugin.Configuration.Save();
-            }
-
-            if (ImGui.IsItemHovered())
-            {
-                ImGui.SetTooltip("On Duty Complete, whether output 'ContactsTracker Record Completed'.");
-            }
-
-        }
-
-        if (ImGui.CollapsingHeader("Data"))
-        {
-            if (ImGui.Button("Export to CSV"))
+            if (ImGui.Button(Language.DataExport))
             {
                 DatabaseV2.Export();
             }
 
             ImGui.SameLine();
 
-            if (ImGui.Button("Import from CSV"))
+            if (ImGui.Button(Language.DataImport))
             {
                 isFileDialogOpen = true;
                 Plugin.FileDialogManager.OpenFileDialog("Select a CSV File", ".csv", (success, paths) =>
@@ -361,11 +346,11 @@ public class MainWindow : Window, IDisposable
                         var ok = DatabaseV2.Import(path);
                         if (ok)
                         {
-                            Plugin.ChatGui.Print("Imported successfully.");
+                            Plugin.ChatGui.Print(Language.DataImportSuccess);
                         }
                         else
                         {
-                            Plugin.ChatGui.PrintError("Failed to import.");
+                            Plugin.ChatGui.PrintError(Language.DataImportFail);
                         }
                     }
                     isFileDialogOpen = false;
@@ -382,23 +367,23 @@ public class MainWindow : Window, IDisposable
 
             if (Plugin.Configuration.EnableDeleteAll)
             {
-                if (ImGui.Button("Delete ALL Active Entries"))
+                if (ImGui.Button(Language.ButtonDeleteAllAction))
                 {
                     ImGui.OpenPopup("Confirm Delete ALL");
                 }
 
                 if (ImGui.BeginPopupModal("Confirm Delete ALL"))
                 {
-                    ImGuiHelpers.SafeTextWrapped("Are you sure you want to delete ALL? This action is irreversible.");
+                    ImGuiHelpers.SafeTextWrapped(Language.ButtonDeleteAllWarning);
                     ImGui.Separator();
 
-                    if (ImGui.Button("Yes"))
+                    if (ImGui.Button(Language.ButtonSelectYes))
                     {
                         DatabaseV2.Reset();
                         ImGui.CloseCurrentPopup();
                     }
                     ImGui.SameLine();
-                    if (ImGui.Button("No"))
+                    if (ImGui.Button(Language.ButtonSelectNo))
                     {
                         ImGui.CloseCurrentPopup();
                     }
@@ -408,10 +393,10 @@ public class MainWindow : Window, IDisposable
 
         }
 
-        if (ImGui.CollapsingHeader("Advanced"))
+        if (ImGui.CollapsingHeader(Language.SettingTabAdvance))
         {
             var deleteAll = Plugin.Configuration.EnableDeleteAll;
-            if (ImGui.Checkbox("Enable Delete at Data Tab", ref deleteAll))
+            if (ImGui.Checkbox(Language.ButtonDeleteAll, ref deleteAll))
             {
                 Plugin.Configuration.EnableDeleteAll = deleteAll;
                 Plugin.Configuration.Save();
@@ -419,7 +404,7 @@ public class MainWindow : Window, IDisposable
 
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip("Show the button to delete all active entries at Data Tab.");
+                ImGui.SetTooltip(Language.ButtonDeleteAllTooltip);
             }
 
             ImGuiHelpers.ScaledDummy(5f);
@@ -433,18 +418,18 @@ public class MainWindow : Window, IDisposable
     {
         ImGuiHelpers.ScaledDummy(5f);
 
-        ImGui.TextColored(ImGuiColors.DalamudRed, "This plugin is in early development. Please report any bugs or suggestions to the developer.");
+        ImGui.TextColored(ImGuiColors.DalamudRed, Language.PluginAboutInfo);
 
         ImGuiHelpers.ScaledDummy(2f);
 
-        ImGui.TextColored(ImGuiColors.DalamudOrange, "Discord: @lamitt");
-        ImGui.TextColored(ImGuiColors.DalamudOrange, "You can ping me at the Dalamud Discord server. Or open an issue at the GitHub repository.");
+        ImGui.TextColored(ImGuiColors.DalamudOrange, Language.AuthorDiscord);
+        ImGui.TextColored(ImGuiColors.DalamudOrange, Language.PluginHowToFeedback);
 
         ImGuiHelpers.ScaledDummy(5f);
 
         using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.ParsedBlue))
         {
-            if (ImGui.Button("GitHub Repository"))
+            if (ImGui.Button("GitHub"))
             {
                 Util.OpenLink("https://github.com/DueDine/ContactsTracker");
             }

@@ -1,5 +1,6 @@
 using ContactsTracker.Data;
 using ContactsTracker.Logic;
+using ContactsTracker.Resources;
 using ContactsTracker.Windows;
 using Dalamud.Game.Command;
 using Dalamud.Interface.ImGuiFileDialog;
@@ -7,6 +8,7 @@ using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using System.Globalization;
 
 namespace ContactsTracker;
 
@@ -65,6 +67,7 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.Draw += DrawUI;
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
         PluginInterface.UiBuilder.OpenConfigUi += ToggleAnalyzeUI;
+        PluginInterface.LanguageChanged += OnLanguageChanged;
 
         if (Configuration.Version != 1) // Then migrate from old data to new data
         {
@@ -87,6 +90,7 @@ public sealed class Plugin : IDalamudPlugin
         MainWindow.Dispose();
         handler.Dispose();
         CommandManager.RemoveHandler(CommandName);
+        PluginInterface.LanguageChanged -= OnLanguageChanged;
     }
 
     private void OnCommand(string command, string args)
@@ -107,6 +111,8 @@ public sealed class Plugin : IDalamudPlugin
             }
         }
     }
+
+    private void OnLanguageChanged(string language) => Language.Culture = new CultureInfo(language);
 
     private void DrawUI() => WindowSystem.Draw();
 

@@ -156,11 +156,6 @@ public class Handler
 
         DataEntryV2.Instance.IsCompleted = true;
         DataEntryV2.EndRecord(Configuration);
-
-        if (Configuration.PrintToChat)
-        {
-            ChatGui.Print("Recorded", "ContactsTracker");
-        }
     }
 
     private unsafe void OnCfPop(ContentFinderCondition condition)
