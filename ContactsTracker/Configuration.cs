@@ -16,8 +16,6 @@ public class Configuration : IPluginConfiguration
 
     public bool RecordSolo { get; set; } = false;
 
-    public bool PrintToChat { get; set; } = false;
-
     public bool OnlyDutyRoulette { get; set; } = true;
 
     public bool KeepIncompleteEntry { get; set; } = true;
