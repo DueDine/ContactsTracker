@@ -12,6 +12,7 @@ public static class ExcelHelper
 
     public static string GetPoppedContentType(uint ContentID)
     {
+        if (ContentID == 0) return "Normal";
         var sheet = Plugin.DataManager.GetExcelSheet<ContentRoulette>();
         return sheet.GetRow(ContentID).Name.ExtractText();
     }

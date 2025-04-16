@@ -106,7 +106,8 @@ public class DatabaseV2
                 entry.BeginAt,
                 entry.EndAt,
                 entry.PlayerJobAbbr,
-                PartyMembers = string.Join("|", entry.PartyMembers)
+                PartyMembers = string.Join("|", entry.PartyMembers),
+                entry.Settings
             });
 
             using var writer = new StreamWriter(exportPath);
