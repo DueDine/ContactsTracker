@@ -184,8 +184,6 @@ public class MainWindow : Window, IDisposable
             ImGui.Spacing();
             ImGuiHelpers.SafeTextWrapped($"Type: {ExcelHelper.GetPoppedContentType(entry.RouletteId)}");
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"Settings: {(entry.Settings != 0 ? entry.Settings.ToString() : "N/A")}");
-            ImGui.Spacing();
             ImGuiHelpers.SafeTextWrapped($"Completed?: {(entry.IsCompleted ? "Yes" : "No")}");
             ImGui.Spacing();
             ImGuiHelpers.SafeTextWrapped($"Time: {entry.BeginAt:yyyy-MM-dd HH:mm:ss} - {(entry.EndAt == DateTime.MinValue ? "N/A" : entry.EndAt)}");
