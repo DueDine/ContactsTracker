@@ -107,6 +107,12 @@ public class Handler
             }
         }
 
+        if (!Configuration.RecordDutySettings && DataEntryV2.Instance.Settings != 0)
+        {
+            DataEntryV2.Reset();
+            return;
+        }
+
         if (DataEntryV2.Instance!.TerritoryId == 0)
         {
             DataEntryV2.Instance.TerritoryId = territoryID;

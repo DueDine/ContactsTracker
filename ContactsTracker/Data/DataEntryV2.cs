@@ -31,12 +31,11 @@ public class DataEntryV2(ushort territoryId, uint rouletteId)
     {
         if (Instance == null) return;
         Instance.Settings = 0;
-        Plugin.Logger.Debug($"Settings: {Unrestricted} {Minimal} {Level} {Silence} {Explore}");
-        if (Unrestricted) Instance.Settings |= DutySettings.IsUnrestrictedParty;
-        if (Minimal) Instance.Settings |= DutySettings.IsMinimalIL;
-        if (Level) Instance.Settings |= DutySettings.IsLevelSync;
-        if (Silence) Instance.Settings |= DutySettings.IsSilenceEcho;
-        if (Explore) Instance.Settings |= DutySettings.IsExplorerMode;
+        if (Unrestricted) Instance.Settings |= DutySettings.UnrestrictedParty;
+        if (Minimal) Instance.Settings |= DutySettings.MinimalIL;
+        if (Level) Instance.Settings |= DutySettings.LevelSync;
+        if (Silence) Instance.Settings |= DutySettings.SilenceEcho;
+        if (Explore) Instance.Settings |= DutySettings.ExplorerMode;
     }
 
     public static void Reset() => Instance = null;
@@ -45,9 +44,9 @@ public class DataEntryV2(ushort territoryId, uint rouletteId)
 [Flags]
 public enum DutySettings
 {
-    IsUnrestrictedParty = 1,
-    IsMinimalIL = 2,
-    IsLevelSync = 4,
-    IsSilenceEcho = 8,
-    IsExplorerMode = 16,
+    UnrestrictedParty = 1,
+    MinimalIL = 2,
+    LevelSync = 4,
+    SilenceEcho = 8,
+    ExplorerMode = 16,
 }

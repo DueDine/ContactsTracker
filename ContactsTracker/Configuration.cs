@@ -18,6 +18,8 @@ public class Configuration : IPluginConfiguration
 
     public bool OnlyDutyRoulette { get; set; } = true;
 
+    public bool RecordDutySettings { get; set; } = false;
+
     public bool KeepIncompleteEntry { get; set; } = true;
 
     public bool ArchiveOldEntries { get; set; } = false;

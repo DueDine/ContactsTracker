@@ -107,7 +107,7 @@ public class DatabaseV2
                 entry.EndAt,
                 entry.PlayerJobAbbr,
                 PartyMembers = string.Join("|", entry.PartyMembers),
-                entry.Settings
+                Settings = ((int)entry.Settings)
             });
 
             using var writer = new StreamWriter(exportPath);
@@ -147,6 +147,7 @@ public class DatabaseV2
                 var endAt = csv.GetField<string>("EndAt");
                 var playerJobAbbr = csv.GetField<string>("PlayerJobAbbr");
                 var partyMembers = csv.GetField<string>("PartyMembers");
+                var settings = csv.GetField<int>("Settings");
                 if (territoryId == 0) continue;
 
                 var entry = new DataEntryV2(territoryId, rouletteId)
@@ -155,10 +156,19 @@ public class DatabaseV2
                     BeginAt = DateTime.Parse(beginAt!),
                     EndAt = DateTime.Parse(endAt!),
                     PlayerJobAbbr = playerJobAbbr!,
-                    PartyMembers = [.. partyMembers!.Split('|')]
+                    PartyMembers = [.. partyMembers!.Split('|')],
+                    Settings = (DutySettings)settings
                 };
                 importedEntries.Add(entry);
             }
+
+            if (importedEntries.Count == 0)
+            {
+                Plugin.ChatGui.Print("No valid entries found in the file.");
+                return false;
+            }
+
+            Reset(); // Clear existing entries
 
             foreach (var entry in importedEntries)
             {

@@ -135,6 +135,9 @@
   <data name="ButtonDeleteAllWarning" xml:space="preserve">
     <value>Are you sure you want to delete ALL? This action is irreversible.</value>
   </data>
+  <data name="ButtonImportWarning" xml:space="preserve">
+    <value>It will clear existing entries.</value>
+  </data>
   <data name="ButtonQuery" xml:space="preserve">
     <value>Query</value>
   </data>
@@ -180,6 +183,9 @@
   <data name="CheckboxEnableRecordRouletteTooltip" xml:space="preserve">
     <value>Enable to only record duty joined by roulette.</value>
   </data>
+  <data name="CheckboxEnableRecordSettings" xml:space="preserve">
+    <value>Log duty with custom Settings</value>
+  </data>
   <data name="CheckboxEnableRecordSolo" xml:space="preserve">
     <value>Record Solo</value>
   </data>
@@ -215,6 +221,9 @@
   </data>
   <data name="EntryParty" xml:space="preserve">
     <value>Party Members</value>
+  </data>
+  <data name="EntrySettings" xml:space="preserve">
+    <value>Settings</value>
   </data>
   <data name="EntryTimeFromTo" xml:space="preserve">
     <value>Time</value>

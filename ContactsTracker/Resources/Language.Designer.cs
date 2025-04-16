@@ -115,6 +115,15 @@ namespace ContactsTracker.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to It will clear existing entries..
+        /// </summary>
+        internal static string ButtonImportWarning {
+            get {
+                return ResourceManager.GetString("ButtonImportWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Query.
         /// </summary>
         internal static string ButtonQuery {
@@ -250,6 +259,15 @@ namespace ContactsTracker.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Log duty with custom Settings.
+        /// </summary>
+        internal static string CheckboxEnableRecordSettings {
+            get {
+                return ResourceManager.GetString("CheckboxEnableRecordSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Record Solo.
         /// </summary>
         internal static string CheckboxEnableRecordSolo {
@@ -354,6 +372,15 @@ namespace ContactsTracker.Resources {
         internal static string EntryParty {
             get {
                 return ResourceManager.GetString("EntryParty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Settings.
+        /// </summary>
+        internal static string EntrySettings {
+            get {
+                return ResourceManager.GetString("EntrySettings", resourceCulture);
             }
         }
         

@@ -192,6 +192,11 @@ public class MainWindow : Window, IDisposable
             ImGui.Spacing();
             ImGuiHelpers.SafeTextWrapped($"{Language.RouletteName}: {ExcelHelper.GetPoppedContentType(entry.RouletteId)}");
             ImGui.Spacing();
+            if (entry.Settings != 0)
+            {
+                ImGuiHelpers.SafeTextWrapped($"{Language.EntrySettings}: {entry.Settings}");
+                ImGui.Spacing();
+            }
             ImGuiHelpers.SafeTextWrapped($"{Language.IsEntryCompleted}: {(entry.IsCompleted ? Language.TextYes : Language.TextNo)}");
             ImGui.Spacing();
             ImGuiHelpers.SafeTextWrapped($"{Language.EntryTimeFromTo}: {entry.BeginAt:yyyy-MM-dd HH:mm:ss} - {(entry.EndAt == DateTime.MinValue ? "N/A" : entry.EndAt)}");
@@ -313,6 +318,17 @@ public class MainWindow : Window, IDisposable
                 ImGui.SetTooltip(Language.CheckboxEnableRecordRouletteTooltip);
             }
 
+            if (!Plugin.Configuration.OnlyDutyRoulette)
+            {
+                ImGui.SameLine();
+                var recordUnrestricted = Plugin.Configuration.RecordDutySettings;
+                if (ImGui.Checkbox(Language.CheckboxEnableRecordSettings, ref recordUnrestricted))
+                {
+                    Plugin.Configuration.RecordDutySettings = recordUnrestricted;
+                    Plugin.Configuration.Save();
+                }
+            }
+
             var keepIncompleteEntry = Plugin.Configuration.KeepIncompleteEntry;
             if (ImGui.Checkbox(Language.CheckboxEnableKeepEntry, ref keepIncompleteEntry))
             {
@@ -356,6 +372,11 @@ public class MainWindow : Window, IDisposable
                     isFileDialogOpen = false;
                 }, 1, Plugin.PluginInterface.GetPluginConfigDirectory(), false);
 
+            }
+
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip(Language.ButtonImportWarning);
             }
 
             if (isFileDialogOpen)
