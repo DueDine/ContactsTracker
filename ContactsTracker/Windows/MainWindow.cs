@@ -10,6 +10,7 @@ using ImGuiNET;
 using System;
 using System.Linq;
 using System.Numerics;
+using System.Collections.Generic;
 
 namespace ContactsTracker.Windows;
 
@@ -19,6 +20,18 @@ public class MainWindow : Window, IDisposable
     private int selectedTab = 0;
     private bool isFileDialogOpen = false;
     private bool doubleCheck = false;
+    private string searchText = string.Empty;
+    private bool showCompletedOnly = false;
+    private List<DataEntryV2> filteredEntries = new();
+
+    public class SearchCriteria
+    {
+        public string TextSearch { get; set; } = string.Empty;
+        public bool? CompletedOnly { get; set; } = null;
+        public DateTime? DateFrom { get; set; } = null;
+        public DateTime? DateTo { get; set; } = null;
+        public string JobFilter { get; set; } = string.Empty;
+    }
 
     public MainWindow(Plugin plugin)
         : base("Contacts Tracker", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
@@ -153,6 +166,75 @@ public class MainWindow : Window, IDisposable
             return;
         }
 
+        // Search UI
+        ImGui.Text("Search:");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(200f);
+        if (ImGui.InputText("##SearchText", ref searchText, 256))
+        {
+            // Update filtered entries when search text changes
+            var criteria = new SearchCriteria 
+            { 
+                TextSearch = searchText,
+                CompletedOnly = showCompletedOnly ? true : null
+            };
+            filteredEntries = FilterEntries(entries, criteria);
+            
+            // Reset selection if current index is out of bounds
+            if (selectedTab >= filteredEntries.Count)
+            {
+                selectedTab = Math.Max(0, filteredEntries.Count - 1);
+            }
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Checkbox("Completed Only", ref showCompletedOnly))
+        {
+            // Update filtered entries when checkbox changes
+            var criteria = new SearchCriteria 
+            { 
+                TextSearch = searchText,
+                CompletedOnly = showCompletedOnly ? true : null
+            };
+            filteredEntries = FilterEntries(entries, criteria);
+            
+            // Reset selection if current index is out of bounds
+            if (selectedTab >= filteredEntries.Count)
+            {
+                selectedTab = Math.Max(0, filteredEntries.Count - 1);
+            }
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Clear"))
+        {
+            searchText = string.Empty;
+            showCompletedOnly = false;
+            filteredEntries = [.. entries.OrderBy(entry => entry.BeginAt)];
+            selectedTab = Math.Max(0, filteredEntries.Count - 1);
+        }
+
+        // Initialize filtered entries if empty or show search results count
+        if (filteredEntries.Count == 0 || (string.IsNullOrEmpty(searchText) && !showCompletedOnly))
+        {
+            filteredEntries = [.. entries.OrderBy(entry => entry.BeginAt)];
+        }
+
+        // Show results count
+        ImGui.Text($"Showing {filteredEntries.Count} of {entries.Count} entries");
+        ImGui.Separator();
+
+        // Ensure selectedTab is valid
+        if (selectedTab >= filteredEntries.Count && filteredEntries.Count > 0)
+        {
+            selectedTab = filteredEntries.Count - 1;
+        }
+        else if (filteredEntries.Count == 0)
+        {
+            ImGuiHelpers.SafeTextWrapped("No entries match your search criteria.");
+            return;
+        }
+
         ImGui.Columns(2, "HistoryColumns", true);
 
         using (var child = ImRaii.Child("Sidebar", new Vector2(0, 0), true))
@@ -166,11 +248,11 @@ public class MainWindow : Window, IDisposable
             }
             ImGui.Separator();
 
-            entries = [.. entries.OrderBy(entry => entry.BeginAt)];
-            for (var i = entries.Count - 1; i >= 0; i--)
+            // Use filtered entries instead of all entries
+            for (var i = filteredEntries.Count - 1; i >= 0; i--)
             {
                 var isSelected = selectedTab == i;
-                if (ImGui.Selectable($"{ExcelHelper.GetTerritoryName(entries[i].TerritoryId)} - {entries[i].BeginAt:yyyy-MM-dd HH:mm:ss}", selectedTab == i))
+                if (ImGui.Selectable($"{ExcelHelper.GetTerritoryName(filteredEntries[i].TerritoryId)} - {filteredEntries[i].BeginAt:yyyy-MM-dd HH:mm:ss}", selectedTab == i))
                 {
                     selectedTab = i;
                 }
@@ -187,7 +269,7 @@ public class MainWindow : Window, IDisposable
         {
             if (!child) return;
 
-            var entry = entries[selectedTab];
+            var entry = filteredEntries[selectedTab];
             ImGuiHelpers.SafeTextWrapped($"{Language.TerritoryName}: {ExcelHelper.GetTerritoryName(entry.TerritoryId)}");
             ImGui.Spacing();
             ImGuiHelpers.SafeTextWrapped($"{Language.RouletteName}: {ExcelHelper.GetPoppedContentType(entry.RouletteId)}");
@@ -226,9 +308,17 @@ public class MainWindow : Window, IDisposable
                 {
                     DatabaseV2.RemoveEntry(entry);
 
-                    if (selectedTab >= DatabaseV2.Count)
+                    // Update filtered entries after deletion
+                    var criteria = new SearchCriteria 
+                    { 
+                        TextSearch = searchText,
+                        CompletedOnly = showCompletedOnly ? true : null
+                    };
+                    filteredEntries = FilterEntries(DatabaseV2.Entries, criteria);
+
+                    if (selectedTab >= filteredEntries.Count)
                     {
-                        selectedTab = Math.Max(-1, DatabaseV2.Count - 1);
+                        selectedTab = Math.Max(0, filteredEntries.Count - 1);
                     }
                 }
             }
@@ -457,4 +547,42 @@ public class MainWindow : Window, IDisposable
         }
     }
 
+    private List<DataEntryV2> FilterEntries(List<DataEntryV2> entries, SearchCriteria criteria)
+    {
+        return [.. entries.Where(entry => 
+        {
+            // Text search across multiple fields
+            if (!string.IsNullOrEmpty(criteria.TextSearch))
+            {
+                var searchText = criteria.TextSearch.ToLower();
+                var territoryName = ExcelHelper.GetTerritoryName(entry.TerritoryId).ToLower();
+                var rouletteName = ExcelHelper.GetPoppedContentType(entry.RouletteId).ToLower();
+                var partyText = string.Join(" ", entry.PartyMembers).ToLower();
+                
+                if (!territoryName.Contains(searchText) && 
+                    !rouletteName.Contains(searchText) && 
+                    !partyText.Contains(searchText) &&
+                    !entry.PlayerJobAbbr.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+            
+            // Completion status filter
+            if (criteria.CompletedOnly.HasValue && entry.IsCompleted != criteria.CompletedOnly.Value)
+                return false;
+
+            // Job filter
+            if (!string.IsNullOrEmpty(criteria.JobFilter) && 
+                !entry.PlayerJobAbbr.Contains(criteria.JobFilter, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            // Date range filter
+            if (criteria.DateFrom.HasValue && entry.BeginAt.Date < criteria.DateFrom.Value.Date)
+                return false;
+            
+            if (criteria.DateTo.HasValue && entry.BeginAt.Date > criteria.DateTo.Value.Date)
+                return false;
+            
+            return true;
+        }).OrderBy(entry => entry.BeginAt)];
+    }
 }
