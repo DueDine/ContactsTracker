@@ -278,7 +278,7 @@ public class MainWindow : Window, IDisposable
             }
             else
             {
-                // Keep previous valid date if parsing fails
+                //
             }
             
             var criteria = new SearchCriteria 
@@ -330,7 +330,7 @@ public class MainWindow : Window, IDisposable
         if (ImGui.Button("This Week"))
         {
             var today = DateTime.Today;
-            var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
+            var startOfWeek = today.AddDays(-(int)today.DayOfWeek + 1);
             var endOfWeek = startOfWeek.AddDays(6);
             
             dateFromText = startOfWeek.ToString("yyyy-MM-dd");
@@ -393,7 +393,7 @@ public class MainWindow : Window, IDisposable
                 ? $"({dateFrom.Value:yyyy-MM-dd} to {dateTo.Value:yyyy-MM-dd})"
                 : dateFrom.HasValue 
                     ? $"(from {dateFrom.Value:yyyy-MM-dd})"
-                    : $"(to {dateTo.Value:yyyy-MM-dd})";
+                    : $"(to {dateTo!.Value:yyyy-MM-dd})"; // At least one to enter if, so null-forgiving
             ImGui.TextColored(ImGuiColors.DalamudGrey, dateRangeText);
         }
         ImGui.Separator();
