@@ -22,7 +22,11 @@ public class MainWindow : Window, IDisposable
     private bool doubleCheck = false;
     private string searchText = string.Empty;
     private bool showCompletedOnly = false;
-    private List<DataEntryV2> filteredEntries = new();
+    private List<DataEntryV2> filteredEntries = [];
+    private string dateFromText = string.Empty;
+    private string dateToText = string.Empty;
+    private DateTime? dateFrom = null;
+    private DateTime? dateTo = null;
 
     public class SearchCriteria
     {
@@ -174,7 +178,9 @@ public class MainWindow : Window, IDisposable
             var criteria = new SearchCriteria 
             { 
                 TextSearch = searchText,
-                CompletedOnly = showCompletedOnly ? true : null
+                CompletedOnly = showCompletedOnly ? true : null,
+                DateFrom = dateFrom,
+                DateTo = dateTo
             };
             filteredEntries = FilterEntries(entries, criteria);
             
@@ -190,7 +196,9 @@ public class MainWindow : Window, IDisposable
             var criteria = new SearchCriteria 
             { 
                 TextSearch = searchText,
-                CompletedOnly = showCompletedOnly ? true : null
+                CompletedOnly = showCompletedOnly ? true : null,
+                DateFrom = dateFrom,
+                DateTo = dateTo
             };
             filteredEntries = FilterEntries(entries, criteria);
             
@@ -205,16 +213,189 @@ public class MainWindow : Window, IDisposable
         {
             searchText = string.Empty;
             showCompletedOnly = false;
+            dateFromText = string.Empty;
+            dateToText = string.Empty;
+            dateFrom = null;
+            dateTo = null;
             filteredEntries = [.. entries.OrderBy(entry => entry.BeginAt)];
             selectedTab = Math.Max(0, filteredEntries.Count - 1);
         }
+
+        // Date filtering row
+        ImGui.Text("Date Range:");
+        ImGui.SameLine();
+        ImGui.Text("From:");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(120f);
+        if (ImGui.InputText("##DateFrom", ref dateFromText, 64))
+        {
+            if (string.IsNullOrEmpty(dateFromText))
+            {
+                dateFrom = null;
+            }
+            else if (DateTime.TryParse(dateFromText, out var parsedFrom))
+            {
+                dateFrom = parsedFrom;
+            }
+            else
+            {
+                // Keep previous valid date if parsing fails
+            }
+            
+            var criteria = new SearchCriteria 
+            { 
+                TextSearch = searchText,
+                CompletedOnly = showCompletedOnly ? true : null,
+                DateFrom = dateFrom,
+                DateTo = dateTo
+            };
+            filteredEntries = FilterEntries(entries, criteria);
+            
+            if (selectedTab >= filteredEntries.Count)
+            {
+                selectedTab = Math.Max(0, filteredEntries.Count - 1);
+            }
+        }
         
-        if ((string.IsNullOrEmpty(searchText) && !showCompletedOnly))
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Format: YYYY-MM-DD");
+        }
+
+        ImGui.SameLine();
+        ImGui.Text("To:");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(120f);
+        if (ImGui.InputText("##DateTo", ref dateToText, 64))
+        {
+            if (string.IsNullOrEmpty(dateToText))
+            {
+                dateTo = null;
+            }
+            else if (DateTime.TryParse(dateToText, out var parsedTo))
+            {
+                dateTo = parsedTo.Date.AddDays(1).AddSeconds(-1); // 23:59:59
+            }
+            else
+            {
+                // Keep previous valid date if parsing fails
+            }
+            
+            var criteria = new SearchCriteria 
+            { 
+                TextSearch = searchText,
+                CompletedOnly = showCompletedOnly ? true : null,
+                DateFrom = dateFrom,
+                DateTo = dateTo
+            };
+            filteredEntries = FilterEntries(entries, criteria);
+            
+            if (selectedTab >= filteredEntries.Count)
+            {
+                selectedTab = Math.Max(0, filteredEntries.Count - 1);
+            }
+        }
+        
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Format: YYYY-MM-DD");
+        }
+
+        // Quick date buttons
+        ImGui.SameLine();
+        if (ImGui.Button("Today"))
+        {
+            var today = DateTime.Today;
+            dateFromText = today.ToString("yyyy-MM-dd");
+            dateToText = today.ToString("yyyy-MM-dd");
+            dateFrom = today;
+            dateTo = today.Date.AddDays(1).AddSeconds(-1);
+            
+            var criteria = new SearchCriteria 
+            { 
+                TextSearch = searchText,
+                CompletedOnly = showCompletedOnly ? true : null,
+                DateFrom = dateFrom,
+                DateTo = dateTo
+            };
+            filteredEntries = FilterEntries(entries, criteria);
+            
+            if (selectedTab >= filteredEntries.Count)
+            {
+                selectedTab = Math.Max(0, filteredEntries.Count - 1);
+            }
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("This Week"))
+        {
+            var today = DateTime.Today;
+            var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
+            var endOfWeek = startOfWeek.AddDays(6);
+            
+            dateFromText = startOfWeek.ToString("yyyy-MM-dd");
+            dateToText = endOfWeek.ToString("yyyy-MM-dd");
+            dateFrom = startOfWeek;
+            dateTo = endOfWeek.Date.AddDays(1).AddSeconds(-1);
+            
+            var criteria = new SearchCriteria 
+            { 
+                TextSearch = searchText,
+                CompletedOnly = showCompletedOnly ? true : null,
+                DateFrom = dateFrom,
+                DateTo = dateTo
+            };
+            filteredEntries = FilterEntries(entries, criteria);
+            
+            if (selectedTab >= filteredEntries.Count)
+            {
+                selectedTab = Math.Max(0, filteredEntries.Count - 1);
+            }
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("This Month"))
+        {
+            var today = DateTime.Today;
+            var startOfMonth = new DateTime(today.Year, today.Month, 1);
+            var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+            
+            dateFromText = startOfMonth.ToString("yyyy-MM-dd");
+            dateToText = endOfMonth.ToString("yyyy-MM-dd");
+            dateFrom = startOfMonth;
+            dateTo = endOfMonth.Date.AddDays(1).AddSeconds(-1);
+            
+            var criteria = new SearchCriteria 
+            { 
+                TextSearch = searchText,
+                CompletedOnly = showCompletedOnly ? true : null,
+                DateFrom = dateFrom,
+                DateTo = dateTo
+            };
+            filteredEntries = FilterEntries(entries, criteria);
+            
+            if (selectedTab >= filteredEntries.Count)
+            {
+                selectedTab = Math.Max(0, filteredEntries.Count - 1);
+            }
+        }
+        
+        if (string.IsNullOrEmpty(searchText) && !showCompletedOnly && dateFrom == null && dateTo == null)
         {
             filteredEntries = [.. entries.OrderBy(entry => entry.BeginAt)];
         }
         
         ImGui.Text($"Showing {filteredEntries.Count} of {entries.Count} entries");
+        if (dateFrom.HasValue || dateTo.HasValue)
+        {
+            ImGui.SameLine();
+            var dateRangeText = dateFrom.HasValue && dateTo.HasValue 
+                ? $"({dateFrom.Value:yyyy-MM-dd} to {dateTo.Value:yyyy-MM-dd})"
+                : dateFrom.HasValue 
+                    ? $"(from {dateFrom.Value:yyyy-MM-dd})"
+                    : $"(to {dateTo.Value:yyyy-MM-dd})";
+            ImGui.TextColored(ImGuiColors.DalamudGrey, dateRangeText);
+        }
         ImGui.Separator();
 
         if (selectedTab >= filteredEntries.Count && filteredEntries.Count > 0)
