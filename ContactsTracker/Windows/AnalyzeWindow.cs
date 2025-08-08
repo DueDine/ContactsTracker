@@ -4,7 +4,7 @@ using ContactsTracker.Resources;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -50,7 +50,7 @@ public class AnalyzeWindow : Window, IDisposable
 
     public override void Draw()
     {
-        ImGuiHelpers.SafeTextWrapped(Language.AnalyzeFeedback);
+        ImGui.TextWrapped(Language.AnalyzeFeedback);
         ImGuiHelpers.ScaledDummy(5f);
 
         DrawTopXQuery();
@@ -86,7 +86,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             if (isBusy)
             {
-                ImGuiHelpers.SafeTextWrapped(Language.QueryInProcess);
+                ImGui.TextWrapped(Language.QueryInProcess);
             }
             else
             {
@@ -108,7 +108,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             if (resultsExtractOccurrences.Count == 0)
             {
-                ImGuiHelpers.SafeTextWrapped(Language.QueryNoResult);
+                ImGui.TextWrapped(Language.QueryNoResult);
                 return;
             }
 
@@ -126,11 +126,11 @@ public class AnalyzeWindow : Window, IDisposable
             {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGuiHelpers.SafeTextWrapped(ExcelHelper.GetTerritoryName(TerritoryId));
+                ImGui.TextWrapped(ExcelHelper.GetTerritoryName(TerritoryId));
                 ImGui.TableNextColumn();
-                ImGuiHelpers.SafeTextWrapped(ExcelHelper.GetPoppedContentType(RouletteId));
+                ImGui.TextWrapped(ExcelHelper.GetPoppedContentType(RouletteId));
                 ImGui.TableNextColumn();
-                ImGuiHelpers.SafeTextWrapped(Count.ToString());
+                ImGui.TextWrapped(Count.ToString());
             }
         }
     }
@@ -156,7 +156,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             if (isBusy)
             {
-                ImGuiHelpers.SafeTextWrapped(Language.QueryInProcess);
+                ImGui.TextWrapped(Language.QueryInProcess);
             }
             else
             {
@@ -174,7 +174,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             if (resultsTotalDurations.Count == 0)
             {
-                ImGuiHelpers.SafeTextWrapped(Language.QueryNoResult);
+                ImGui.TextWrapped(Language.QueryNoResult);
                 return;
             }
 
@@ -192,11 +192,11 @@ public class AnalyzeWindow : Window, IDisposable
             {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGuiHelpers.SafeTextWrapped(ExcelHelper.GetPoppedContentType(RouletteId));
+                ImGui.TextWrapped(ExcelHelper.GetPoppedContentType(RouletteId));
                 ImGui.TableNextColumn();
-                ImGuiHelpers.SafeTextWrapped(TotalDuration.ToString());
+                ImGui.TextWrapped(TotalDuration.ToString());
                 ImGui.TableNextColumn();
-                ImGuiHelpers.SafeTextWrapped(AverageDuration.ToString("hh\\:mm\\:ss"));
+                ImGui.TextWrapped(AverageDuration.ToString("hh\\:mm\\:ss"));
             }
         }
     }
@@ -239,7 +239,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             if (isBusy)
             {
-                ImGuiHelpers.SafeTextWrapped(Language.QueryInProcess);
+                ImGui.TextWrapped(Language.QueryInProcess);
             }
             else
             {
@@ -257,7 +257,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             if (resultsByRoulette.Count == 0)
             {
-                ImGuiHelpers.SafeTextWrapped(Language.QueryNoResult);
+                ImGui.TextWrapped(Language.QueryNoResult);
                 return;
             }
             using var table = ImRaii.Table("##ByRoulette", 2);
@@ -270,9 +270,9 @@ public class AnalyzeWindow : Window, IDisposable
             {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGuiHelpers.SafeTextWrapped(ExcelHelper.GetTerritoryName(TerritoryId));
+                ImGui.TextWrapped(ExcelHelper.GetTerritoryName(TerritoryId));
                 ImGui.TableNextColumn();
-                ImGuiHelpers.SafeTextWrapped(Count.ToString());
+                ImGui.TextWrapped(Count.ToString());
             }
         }
     }

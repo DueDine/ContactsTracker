@@ -6,7 +6,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System;
 using System.Linq;
 using System.Numerics;
@@ -90,14 +90,14 @@ public class MainWindow : Window, IDisposable
     {
         if (Plugin.Configuration.EnableLogging == false)
         {
-            ImGuiHelpers.SafeTextWrapped(Language.WarningWhenDisableLogging);
+            ImGui.TextWrapped(Language.WarningWhenDisableLogging);
             return;
         }
 
         var entries = DatabaseV2.Entries;
         if (entries.Count == 0 && DataEntryV2.Instance == null)
         {
-            ImGuiHelpers.SafeTextWrapped(Language.NotAnyRecord);
+            ImGui.TextWrapped(Language.NotAnyRecord);
             return;
         }
 
@@ -105,34 +105,34 @@ public class MainWindow : Window, IDisposable
         if (DataEntryV2.Instance != null && DataEntryV2.Instance.TerritoryId != 0)
         {
             entry = DataEntryV2.Instance;
-            ImGuiHelpers.SafeTextWrapped(Language.WhenLogging);
+            ImGui.TextWrapped(Language.WhenLogging);
         }
         else if (entry != default)
         {
-            ImGuiHelpers.SafeTextWrapped(Language.NotActiveButHaveHistory);
+            ImGui.TextWrapped(Language.NotActiveButHaveHistory);
         }
         else
         {
-            ImGuiHelpers.SafeTextWrapped(Language.NotAnyRecord);
+            ImGui.TextWrapped(Language.NotAnyRecord);
             return;
         }
 
         ImGui.Spacing();
-        ImGuiHelpers.SafeTextWrapped($"{Language.TerritoryName}: {ExcelHelper.GetTerritoryName(entry.TerritoryId)}");
+        ImGui.TextWrapped($"{Language.TerritoryName}: {ExcelHelper.GetTerritoryName(entry.TerritoryId)}");
         ImGui.Spacing();
-        ImGuiHelpers.SafeTextWrapped($"{Language.RouletteName}: {ExcelHelper.GetPoppedContentType(entry.RouletteId)}");
+        ImGui.TextWrapped($"{Language.RouletteName}: {ExcelHelper.GetPoppedContentType(entry.RouletteId)}");
         ImGui.Spacing();
-        ImGuiHelpers.SafeTextWrapped($"{entry.BeginAt} - {(entry.EndAt == DateTime.MinValue ? "N/A" : entry.EndAt)}");
+        ImGui.TextWrapped($"{entry.BeginAt} - {(entry.EndAt == DateTime.MinValue ? "N/A" : entry.EndAt)}");
 
         if (entry.EndAt != DateTime.MinValue)
         {
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"{Language.DurationOfEntry}: {entry.EndAt.Subtract(entry.BeginAt):hh\\:mm\\:ss}");
+            ImGui.TextWrapped($"{Language.DurationOfEntry}: {entry.EndAt.Subtract(entry.BeginAt):hh\\:mm\\:ss}");
         }
         else if (Plugin.DutyState.IsDutyStarted) // Still in progress
         {
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"{Language.DurationOfEntry}: {DateTime.Now.Subtract(entry.BeginAt):hh\\:mm\\:ss}");
+            ImGui.TextWrapped($"{Language.DurationOfEntry}: {DateTime.Now.Subtract(entry.BeginAt):hh\\:mm\\:ss}");
         }
         ImGui.Spacing();
 
@@ -166,7 +166,7 @@ public class MainWindow : Window, IDisposable
         var entries = DatabaseV2.Entries;
         if (entries.Count == 0)
         {
-            ImGuiHelpers.SafeTextWrapped(Language.NotAnyRecord);
+            ImGui.TextWrapped(Language.NotAnyRecord);
             return;
         }
 
@@ -404,7 +404,7 @@ public class MainWindow : Window, IDisposable
         }
         else if (filteredEntries.Count == 0)
         {
-            ImGuiHelpers.SafeTextWrapped("No entries match your search criteria.");
+            ImGui.TextWrapped("No entries match your search criteria.");
             return;
         }
 
@@ -443,27 +443,27 @@ public class MainWindow : Window, IDisposable
             if (!child) return;
 
             var entry = filteredEntries[selectedTab];
-            ImGuiHelpers.SafeTextWrapped($"{Language.TerritoryName}: {ExcelHelper.GetTerritoryName(entry.TerritoryId)}");
+            ImGui.TextWrapped($"{Language.TerritoryName}: {ExcelHelper.GetTerritoryName(entry.TerritoryId)}");
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"{Language.RouletteName}: {ExcelHelper.GetPoppedContentType(entry.RouletteId)}");
+            ImGui.TextWrapped($"{Language.RouletteName}: {ExcelHelper.GetPoppedContentType(entry.RouletteId)}");
             ImGui.Spacing();
             if (entry.Settings != 0)
             {
-                ImGuiHelpers.SafeTextWrapped($"{Language.EntrySettings}: {entry.Settings}");
+                ImGui.TextWrapped($"{Language.EntrySettings}: {entry.Settings}");
                 ImGui.Spacing();
             }
-            ImGuiHelpers.SafeTextWrapped($"{Language.IsEntryCompleted}: {(entry.IsCompleted ? Language.TextYes : Language.TextNo)}");
+            ImGui.TextWrapped($"{Language.IsEntryCompleted}: {(entry.IsCompleted ? Language.TextYes : Language.TextNo)}");
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"{Language.EntryTimeFromTo}: {entry.BeginAt:yyyy-MM-dd HH:mm:ss} - {(entry.EndAt == DateTime.MinValue ? "N/A" : entry.EndAt)}");
+            ImGui.TextWrapped($"{Language.EntryTimeFromTo}: {entry.BeginAt:yyyy-MM-dd HH:mm:ss} - {(entry.EndAt == DateTime.MinValue ? "N/A" : entry.EndAt)}");
             ImGui.Spacing();
-            ImGuiHelpers.SafeTextWrapped($"{Language.PlayerJob}: {entry.PlayerJobAbbr}");
+            ImGui.TextWrapped($"{Language.PlayerJob}: {entry.PlayerJobAbbr}");
             ImGui.Spacing();
 
-            ImGuiHelpers.SafeTextWrapped(Language.EntryParty);
+            ImGui.TextWrapped(Language.EntryParty);
             if (entry.PartyMembers.Count == 0)
             {
                 ImGui.SameLine();
-                ImGuiHelpers.SafeTextWrapped("N/A");
+                ImGui.TextWrapped("N/A");
             }
             else
             {
@@ -657,7 +657,7 @@ public class MainWindow : Window, IDisposable
 
                 if (ImGui.BeginPopupModal("Confirm Delete ALL"))
                 {
-                    ImGuiHelpers.SafeTextWrapped(Language.ButtonDeleteAllWarning);
+                    ImGui.TextWrapped(Language.ButtonDeleteAllWarning);
                     ImGui.Separator();
 
                     if (ImGui.Button(Language.ButtonSelectYes))
@@ -691,9 +691,9 @@ public class MainWindow : Window, IDisposable
             }
 
             ImGuiHelpers.ScaledDummy(5f);
-            ImGuiHelpers.SafeTextWrapped($"Configuration Version: {Plugin.Configuration.Version}");
-            ImGuiHelpers.SafeTextWrapped($"Database Version: {DatabaseV2.Version}");
-            ImGuiHelpers.SafeTextWrapped($"Plugin Version: {Plugin.PluginInterface.Manifest.AssemblyVersion}");
+            ImGui.TextWrapped($"Configuration Version: {Plugin.Configuration.Version}");
+            ImGui.TextWrapped($"Database Version: {DatabaseV2.Version}");
+            ImGui.TextWrapped($"Plugin Version: {Plugin.PluginInterface.Manifest.AssemblyVersion}");
         }
     }
 
