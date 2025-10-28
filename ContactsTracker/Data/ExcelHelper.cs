@@ -6,6 +6,7 @@ public static class ExcelHelper
 {
     public static string GetTerritoryName(ushort territoryID)
     {
+        if (territoryID == 0) return "Unknown";
         var sheet = Plugin.DataManager.GetExcelSheet<TerritoryType>();
         return sheet.GetRow(territoryID).ContentFinderCondition.Value.Name.ExtractText();
     }
@@ -19,12 +20,14 @@ public static class ExcelHelper
 
     public static string GetWorldName(ushort worldID)
     {
+        if (worldID == 0) return "Unknown";
         var sheet = Plugin.DataManager.GetExcelSheet<World>();
         return sheet.GetRow(worldID).Name.ExtractText();
     }
 
     public static string GetRouletteName(uint rouletteID)
     {
+        if (rouletteID == 0) return "Unknown";
         var sheet = Plugin.DataManager.GetExcelSheet<ContentRoulette>();
         return sheet.GetRow(rouletteID).Name.ExtractText();
     }
