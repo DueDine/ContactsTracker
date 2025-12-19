@@ -11,7 +11,7 @@ public static class EntryLogic
     {
         if (entry == null) return;
 
-        if (Plugin.ClientState.LocalPlayer is not { } localPlayer) return;
+        if (Plugin.ObjectTable.LocalPlayer is not { } localPlayer) return;
 
         entry.PlayerJobAbbr = localPlayer.ClassJob.Value.Abbreviation.ExtractText();
         entry.EndAt = DateTime.Now;
@@ -69,7 +69,7 @@ public static class EntryLogic
 
     public static unsafe void StartRecord(DataEntryV2 entry, Configuration configuration)
     {
-        if (Plugin.ClientState.LocalPlayer is not { } localPlayer) return;
+        if (Plugin.ObjectTable.LocalPlayer is not { } localPlayer) return;
 
         entry.PlayerJobAbbr = localPlayer.ClassJob.Value.Abbreviation.ExtractText();
         entry.BeginAt = DateTime.Now;

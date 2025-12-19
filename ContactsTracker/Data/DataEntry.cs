@@ -37,7 +37,7 @@ public class DataEntry(string? territoryName, string? rouletteType, bool isCompl
             return;
         }
 
-        var localPlayer = Plugin.ClientState.LocalPlayer;
+        var localPlayer = Plugin.ObjectTable.LocalPlayer;
         if (localPlayer != null)
         {
             Instance.jobName = Plugin.UpperFirst(localPlayer.ClassJob.Value.Name.ExtractText());
