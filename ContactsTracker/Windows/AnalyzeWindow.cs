@@ -5,6 +5,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Colors;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,13 +30,18 @@ public class AnalyzeWindow : Window, IDisposable
     private bool isBusy = false;
     private int topX = 0;
     private RouletteType selectedRoulette = RouletteType.Leveling;
+    private string dateFromText = string.Empty;
+    private string dateToText = string.Empty;
+    private DateTime? dateFrom = null;
+    private DateTime? dateTo = null;
 
     private List<(ushort TerritoryId, uint RouletteId, int Count)> resultsExtractOccurrences = [];
     private List<(uint RouletteId, TimeSpan TotalDuration, TimeSpan AverageDuration)> resultsTotalDurations = [];
     private List<(ushort TerritoryId, int Count)> resultsByRoulette = [];
+    private List<DataEntryV2> filteredEntries = [];
 
     public AnalyzeWindow(Plugin plugin)
-    : base("Analyze - Still developing", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+    : base("Analyze", ImGuiWindowFlags.NoScrollbar)
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -53,9 +59,129 @@ public class AnalyzeWindow : Window, IDisposable
         ImGui.TextWrapped(Language.AnalyzeFeedback);
         ImGuiHelpers.ScaledDummy(5f);
 
+        UpdateFilteredEntries(resetQueries: false);
+        DrawDateFilters();
+        ImGuiHelpers.ScaledDummy(5f);
+
         DrawTopXQuery();
         DrawTotalDurationQuery();
         DrawByRouletteQuery();
+    }
+
+    private void DrawDateFilters()
+    {
+        var filterChanged = false;
+
+        ImGui.Text("Date Range:");
+        ImGui.SameLine();
+        ImGui.Text("From:");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(120f);
+        if (ImGui.InputText("##AnalyzeDateFrom", ref dateFromText, 64))
+        {
+            filterChanged = true;
+            if (string.IsNullOrEmpty(dateFromText))
+            {
+                dateFrom = null;
+            }
+            else if (DateTime.TryParse(dateFromText, out var parsedFrom))
+            {
+                dateFrom = parsedFrom;
+            }
+        }
+
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Format: YYYY-MM-DD");
+        }
+
+        ImGui.SameLine();
+        ImGui.Text("To:");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(120f);
+        if (ImGui.InputText("##AnalyzeDateTo", ref dateToText, 64))
+        {
+            filterChanged = true;
+            if (string.IsNullOrEmpty(dateToText))
+            {
+                dateTo = null;
+            }
+            else if (DateTime.TryParse(dateToText, out var parsedTo))
+            {
+                dateTo = parsedTo.Date.AddDays(1).AddSeconds(-1);
+            }
+        }
+
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Format: YYYY-MM-DD");
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Today"))
+        {
+            filterChanged = true;
+            var today = DateTime.Today;
+            dateFromText = today.ToString("yyyy-MM-dd");
+            dateToText = today.ToString("yyyy-MM-dd");
+            dateFrom = today;
+            dateTo = today.Date.AddDays(1).AddSeconds(-1);
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("This Week"))
+        {
+            filterChanged = true;
+            var today = DateTime.Today;
+            var startOfWeek = today.AddDays(-(int)today.DayOfWeek + 1);
+            var endOfWeek = startOfWeek.AddDays(6);
+
+            dateFromText = startOfWeek.ToString("yyyy-MM-dd");
+            dateToText = endOfWeek.ToString("yyyy-MM-dd");
+            dateFrom = startOfWeek;
+            dateTo = endOfWeek.Date.AddDays(1).AddSeconds(-1);
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("This Month"))
+        {
+            filterChanged = true;
+            var today = DateTime.Today;
+            var startOfMonth = new DateTime(today.Year, today.Month, 1);
+            var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+
+            dateFromText = startOfMonth.ToString("yyyy-MM-dd");
+            dateToText = endOfMonth.ToString("yyyy-MM-dd");
+            dateFrom = startOfMonth;
+            dateTo = endOfMonth.Date.AddDays(1).AddSeconds(-1);
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Clear Filters"))
+        {
+            filterChanged = true;
+            dateFromText = string.Empty;
+            dateToText = string.Empty;
+            dateFrom = null;
+            dateTo = null;
+        }
+
+        if (filterChanged)
+        {
+            UpdateFilteredEntries();
+        }
+
+        ImGui.Text($"Showing {filteredEntries.Count} of {DatabaseV2.Entries.Count} entries");
+        if (dateFrom.HasValue || dateTo.HasValue)
+        {
+            ImGui.SameLine();
+            var dateRangeText = dateFrom.HasValue && dateTo.HasValue
+                ? $"({dateFrom.Value:yyyy-MM-dd} to {dateTo.Value:yyyy-MM-dd})"
+                : dateFrom.HasValue
+                    ? $"(from {dateFrom.Value:yyyy-MM-dd})"
+                    : $"(to {dateTo!.Value:yyyy-MM-dd})";
+            ImGui.TextColored(ImGuiColors.DalamudGrey, dateRangeText);
+        }
     }
 
     private void DrawTopXQuery()
@@ -91,7 +217,7 @@ public class AnalyzeWindow : Window, IDisposable
             else
             {
                 isBusy = true;
-                var occurrences = RouletteQueries.ExtractOccurrences(DatabaseV2.Entries);
+                var occurrences = RouletteQueries.ExtractOccurrences(filteredEntries);
                 occurrences.Sort((a, b) => b.Count.CompareTo(a.Count));
                 if (topX >= 1)
                 {
@@ -161,7 +287,7 @@ public class AnalyzeWindow : Window, IDisposable
             else
             {
                 isBusy = true;
-                var durations = RouletteQueries.CalculateTotalDurations(DatabaseV2.Entries);
+                var durations = RouletteQueries.CalculateTotalDurations(filteredEntries);
                 durations.Sort((a, b) => b.TotalDuration.CompareTo(a.TotalDuration));
                 resultsTotalDurations = durations;
                 totalDurationState.IsAvailable = true;
@@ -244,7 +370,7 @@ public class AnalyzeWindow : Window, IDisposable
             else
             {
                 isBusy = true;
-                var occurrences = RouletteQueries.OccurrencesByRoulette(DatabaseV2.Entries, (uint)selectedRoulette);
+                var occurrences = RouletteQueries.OccurrencesByRoulette(filteredEntries, (uint)selectedRoulette);
                 occurrences.Sort((a, b) => b.Count.CompareTo(a.Count));
                 resultsByRoulette = occurrences;
                 byRouletteState.IsAvailable = true;
@@ -275,6 +401,46 @@ public class AnalyzeWindow : Window, IDisposable
                 ImGui.TextWrapped(Count.ToString());
             }
         }
+    }
+
+    private void UpdateFilteredEntries(bool resetQueries = true)
+    {
+        var entries = DatabaseV2.Entries.AsEnumerable();
+
+        if (dateFrom.HasValue)
+        {
+            entries = entries.Where(entry => entry.BeginAt.Date >= dateFrom.Value.Date);
+        }
+
+        if (dateTo.HasValue)
+        {
+            entries = entries.Where(entry => entry.BeginAt.Date <= dateTo.Value.Date);
+        }
+
+        filteredEntries = [.. entries];
+
+        if (resetQueries)
+        {
+            ResetQueryResults();
+        }
+    }
+
+    private void ResetQueryResults()
+    {
+        topXState.IsClicked = false;
+        topXState.IsAvailable = false;
+
+        totalDurationState.IsClicked = false;
+        totalDurationState.IsAvailable = false;
+
+        byRouletteState.IsClicked = false;
+        byRouletteState.IsAvailable = false;
+
+        resultsExtractOccurrences.Clear();
+        resultsTotalDurations.Clear();
+        resultsByRoulette.Clear();
+
+        isBusy = false;
     }
 }
 
