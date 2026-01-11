@@ -16,7 +16,7 @@ public static class RouletteQueries
             .Select(group => (group.Key.TerritoryId, group.Key.RouletteId, group.Count()))];
     }
 
-    public static List<(uint RouletteId, TimeSpan TotalDuration, TimeSpan AverageDuration)> CalculateTotalDurations(List<DataEntryV2> Entries)
+    public static List<(uint RouletteId, TimeSpan TotalDuration, TimeSpan AverageDuration, int Count)> CalculateTotalDurations(List<DataEntryV2> Entries)
     {
         return [.. Entries
             .Where(entry => entry.RouletteId != 0)
@@ -34,7 +34,7 @@ public static class RouletteQueries
                     ? TimeSpan.FromTicks(validDurations.Sum(d => d.Ticks) / validDurations.Count)
                     : TimeSpan.Zero;
 
-                return (RouletteId: group.Key, TotalDuration: totalDuration, AverageDuration: averageDuration);
+                return (RouletteId: group.Key, TotalDuration: totalDuration, AverageDuration: averageDuration, Count: validDurations.Count);
             })];
     }
 

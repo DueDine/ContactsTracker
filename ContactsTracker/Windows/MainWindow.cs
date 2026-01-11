@@ -330,7 +330,8 @@ public class MainWindow : Window, IDisposable
         if (ImGui.Button("This Week"))
         {
             var today = DateTime.Today;
-            var startOfWeek = today.AddDays(-(int)today.DayOfWeek + 1);
+            var diff = (7 + (int)today.DayOfWeek - (int)DayOfWeek.Monday) % 7;
+            var startOfWeek = today.AddDays(-diff);
             var endOfWeek = startOfWeek.AddDays(6);
             
             dateFromText = startOfWeek.ToString("yyyy-MM-dd");

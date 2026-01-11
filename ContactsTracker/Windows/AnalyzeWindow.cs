@@ -36,7 +36,7 @@ public class AnalyzeWindow : Window, IDisposable
     private DateTime? dateTo = null;
 
     private List<(ushort TerritoryId, uint RouletteId, int Count)> resultsExtractOccurrences = [];
-    private List<(uint RouletteId, TimeSpan TotalDuration, TimeSpan AverageDuration)> resultsTotalDurations = [];
+    private List<(uint RouletteId, TimeSpan TotalDuration, TimeSpan AverageDuration, int Count)> resultsTotalDurations = [];
     private List<(ushort TerritoryId, int Count)> resultsByRoulette = [];
     private List<DataEntryV2> filteredEntries = [];
 
@@ -133,7 +133,8 @@ public class AnalyzeWindow : Window, IDisposable
         {
             filterChanged = true;
             var today = DateTime.Today;
-            var startOfWeek = today.AddDays(-(int)today.DayOfWeek + 1);
+            var diff = (7 + (int)today.DayOfWeek - (int)DayOfWeek.Monday) % 7;
+            var startOfWeek = today.AddDays(-diff);
             var endOfWeek = startOfWeek.AddDays(6);
 
             dateFromText = startOfWeek.ToString("yyyy-MM-dd");
@@ -314,13 +315,13 @@ public class AnalyzeWindow : Window, IDisposable
             ImGui.TableNextColumn();
             ImGui.TableHeader("Average");
 
-            foreach (var (RouletteId, TotalDuration, AverageDuration) in resultsTotalDurations)
+            foreach (var (RouletteId, TotalDuration, AverageDuration, Count) in resultsTotalDurations)
             {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGui.TextWrapped(ExcelHelper.GetPoppedContentType(RouletteId));
+                ImGui.TextWrapped($"{ExcelHelper.GetPoppedContentType(RouletteId)} (x{Count})");
                 ImGui.TableNextColumn();
-                ImGui.TextWrapped(TotalDuration.ToString());
+                ImGui.TextWrapped(TotalDuration.ToString("hh\\:mm\\:ss"));
                 ImGui.TableNextColumn();
                 ImGui.TextWrapped(AverageDuration.ToString("hh\\:mm\\:ss"));
             }
@@ -381,6 +382,12 @@ public class AnalyzeWindow : Window, IDisposable
 
         if (byRouletteState.IsAvailable)
         {
+            var matchingCount = filteredEntries.Count(entry => entry.RouletteId == (uint)selectedRoulette && entry.IsCompleted);
+            if (matchingCount > 0)
+            {
+                ImGui.Text($"Total {matchingCount} entries");
+            }
+            
             if (resultsByRoulette.Count == 0)
             {
                 ImGui.TextWrapped(Language.QueryNoResult);
