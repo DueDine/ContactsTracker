@@ -113,7 +113,11 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
-    private void OnLanguageChanged(string language) => Language.Culture = new CultureInfo(language);
+    private void OnLanguageChanged(string language)
+    {
+        Language.Culture = new CultureInfo(language);
+        ExcelHelper.ClearCache();
+    }
 
     private void DrawUI() => WindowSystem.Draw();
 
