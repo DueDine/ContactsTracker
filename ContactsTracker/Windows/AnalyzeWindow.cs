@@ -17,6 +17,7 @@ internal class QueryState
 {
     public bool IsClicked { get; set; } = false;
     public bool IsAvailable { get; set; } = false;
+    public bool IsStale { get; set; } = false;
 }
 
 public class AnalyzeWindow : Window, IDisposable
@@ -65,6 +66,10 @@ public class AnalyzeWindow : Window, IDisposable
 
         UpdateFilteredEntries(resetQueries: false);
         DrawDateFilters();
+        if (HasStaleQueryResults())
+        {
+            ImGui.TextColored(ImGuiColors.DalamudOrange, "Some results are not up-to-date. Please click Query again.");
+        }
         ImGuiHelpers.ScaledDummy(5f);
 
         DrawTopXQuery();
@@ -210,6 +215,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             topXState.IsClicked = false;
             topXState.IsAvailable = false;
+            topXState.IsStale = false;
             resultsExtractOccurrences.Clear();
         }
 
@@ -230,6 +236,7 @@ public class AnalyzeWindow : Window, IDisposable
                 }
                 resultsExtractOccurrences = occurrences;
                 topXState.IsAvailable = true;
+                topXState.IsStale = false;
                 isBusy = false;
                 topXState.IsClicked = false;
             }
@@ -237,6 +244,11 @@ public class AnalyzeWindow : Window, IDisposable
 
         if (topXState.IsAvailable)
         {
+            if (topXState.IsStale)
+            {
+                ImGui.TextColored(ImGuiColors.DalamudOrange, "Data changed. Please click Query to refresh this result.");
+            }
+
             if (resultsExtractOccurrences.Count == 0)
             {
                 ImGui.TextWrapped(Language.QueryNoResult);
@@ -280,6 +292,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             totalDurationState.IsClicked = false;
             totalDurationState.IsAvailable = false;
+            totalDurationState.IsStale = false;
             resultsTotalDurations.Clear();
         }
 
@@ -296,6 +309,7 @@ public class AnalyzeWindow : Window, IDisposable
                 durations.Sort((a, b) => b.TotalDuration.CompareTo(a.TotalDuration));
                 resultsTotalDurations = durations;
                 totalDurationState.IsAvailable = true;
+                totalDurationState.IsStale = false;
                 isBusy = false;
                 totalDurationState.IsClicked = false;
             }
@@ -303,6 +317,11 @@ public class AnalyzeWindow : Window, IDisposable
 
         if (totalDurationState.IsAvailable)
         {
+            if (totalDurationState.IsStale)
+            {
+                ImGui.TextColored(ImGuiColors.DalamudOrange, "Data changed. Please click Query to refresh this result.");
+            }
+
             if (resultsTotalDurations.Count == 0)
             {
                 ImGui.TextWrapped(Language.QueryNoResult);
@@ -348,6 +367,7 @@ public class AnalyzeWindow : Window, IDisposable
                         selectedRoulette = roulette;
                         byRouletteState.IsClicked = false;
                         byRouletteState.IsAvailable = false;
+                        byRouletteState.IsStale = false;
                     }
                 }
             }
@@ -363,6 +383,7 @@ public class AnalyzeWindow : Window, IDisposable
         {
             byRouletteState.IsClicked = false;
             byRouletteState.IsAvailable = false;
+            byRouletteState.IsStale = false;
             resultsByRoulette.Clear();
         }
 
@@ -379,6 +400,7 @@ public class AnalyzeWindow : Window, IDisposable
                 occurrences.Sort((a, b) => b.Count.CompareTo(a.Count));
                 resultsByRoulette = occurrences;
                 byRouletteState.IsAvailable = true;
+                byRouletteState.IsStale = false;
                 isBusy = false;
                 byRouletteState.IsClicked = false;
             }
@@ -386,6 +408,11 @@ public class AnalyzeWindow : Window, IDisposable
 
         if (byRouletteState.IsAvailable)
         {
+            if (byRouletteState.IsStale)
+            {
+                ImGui.TextColored(ImGuiColors.DalamudOrange, "Data changed. Please click Query to refresh this result.");
+            }
+
             var matchingCount = filteredEntries.Count(entry => entry.RouletteId == (uint)selectedRoulette && entry.IsCompleted);
             if (matchingCount > 0)
             {
@@ -417,10 +444,11 @@ public class AnalyzeWindow : Window, IDisposable
     private void UpdateFilteredEntries(bool resetQueries = true)
     {
         var entriesList = DatabaseV2.Entries;
-        var shouldRefresh = !ReferenceEquals(entriesList, lastEntriesRef)
-            || entriesList.Count != lastEntriesCount
-            || !Nullable.Equals(dateFrom, lastDateFrom)
+        var entriesChanged = !ReferenceEquals(entriesList, lastEntriesRef)
+            || entriesList.Count != lastEntriesCount;
+        var dateChanged = !Nullable.Equals(dateFrom, lastDateFrom)
             || !Nullable.Equals(dateTo, lastDateTo);
+        var shouldRefresh = entriesChanged || dateChanged;
 
         if (!shouldRefresh)
         {
@@ -449,6 +477,11 @@ public class AnalyzeWindow : Window, IDisposable
         lastDateFrom = dateFrom;
         lastDateTo = dateTo;
 
+        if (entriesChanged && !resetQueries)
+        {
+            MarkAvailableQueryResultsAsStale();
+        }
+
         if (resetQueries)
         {
             ResetQueryResults();
@@ -459,18 +492,44 @@ public class AnalyzeWindow : Window, IDisposable
     {
         topXState.IsClicked = false;
         topXState.IsAvailable = false;
+        topXState.IsStale = false;
 
         totalDurationState.IsClicked = false;
         totalDurationState.IsAvailable = false;
+        totalDurationState.IsStale = false;
 
         byRouletteState.IsClicked = false;
         byRouletteState.IsAvailable = false;
+        byRouletteState.IsStale = false;
 
         resultsExtractOccurrences.Clear();
         resultsTotalDurations.Clear();
         resultsByRoulette.Clear();
 
         isBusy = false;
+    }
+
+    private bool HasStaleQueryResults()
+    {
+        return topXState.IsStale || totalDurationState.IsStale || byRouletteState.IsStale;
+    }
+
+    private void MarkAvailableQueryResultsAsStale()
+    {
+        if (topXState.IsAvailable)
+        {
+            topXState.IsStale = true;
+        }
+
+        if (totalDurationState.IsAvailable)
+        {
+            totalDurationState.IsStale = true;
+        }
+
+        if (byRouletteState.IsAvailable)
+        {
+            byRouletteState.IsStale = true;
+        }
     }
 }
 

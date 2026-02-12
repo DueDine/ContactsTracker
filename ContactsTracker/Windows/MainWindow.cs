@@ -29,6 +29,7 @@ public class MainWindow : Window, IDisposable
     private DateTime? dateTo = null;
     private int lastEntriesCount = -1;
     private List<DataEntryV2>? lastEntriesRef = null;
+    private SearchCriteria? lastHistoryCriteria = null;
 
     public class SearchCriteria
     {
@@ -175,40 +176,10 @@ public class MainWindow : Window, IDisposable
         ImGui.Text("Search:");
         ImGui.SameLine();
         ImGui.SetNextItemWidth(200f);
-        if (ImGui.InputText("##SearchText", ref searchText, 256))
-        {
-            var criteria = new SearchCriteria 
-            { 
-                TextSearch = searchText,
-                CompletedOnly = showCompletedOnly ? true : null,
-                DateFrom = dateFrom,
-                DateTo = dateTo
-            };
-            filteredEntries = FilterEntries(entries, criteria);
-            
-            if (selectedTab >= filteredEntries.Count)
-            {
-                selectedTab = Math.Max(0, filteredEntries.Count - 1);
-            }
-        }
+        _ = ImGui.InputText("##SearchText", ref searchText, 256);
 
         ImGui.SameLine();
-        if (ImGui.Checkbox("Completed Only", ref showCompletedOnly))
-        {
-            var criteria = new SearchCriteria 
-            { 
-                TextSearch = searchText,
-                CompletedOnly = showCompletedOnly ? true : null,
-                DateFrom = dateFrom,
-                DateTo = dateTo
-            };
-            filteredEntries = FilterEntries(entries, criteria);
-            
-            if (selectedTab >= filteredEntries.Count)
-            {
-                selectedTab = Math.Max(0, filteredEntries.Count - 1);
-            }
-        }
+        _ = ImGui.Checkbox("Completed Only", ref showCompletedOnly);
 
         ImGui.SameLine();
         if (ImGui.Button("Clear"))
@@ -219,8 +190,6 @@ public class MainWindow : Window, IDisposable
             dateToText = string.Empty;
             dateFrom = null;
             dateTo = null;
-            filteredEntries = [.. entries.OrderBy(entry => entry.BeginAt)];
-            selectedTab = Math.Max(0, filteredEntries.Count - 1);
         }
 
         // Date filtering row
@@ -242,20 +211,6 @@ public class MainWindow : Window, IDisposable
             else
             {
                 // Keep previous valid date if parsing fails
-            }
-            
-            var criteria = new SearchCriteria 
-            { 
-                TextSearch = searchText,
-                CompletedOnly = showCompletedOnly ? true : null,
-                DateFrom = dateFrom,
-                DateTo = dateTo
-            };
-            filteredEntries = FilterEntries(entries, criteria);
-            
-            if (selectedTab >= filteredEntries.Count)
-            {
-                selectedTab = Math.Max(0, filteredEntries.Count - 1);
             }
         }
         
@@ -282,20 +237,6 @@ public class MainWindow : Window, IDisposable
             {
                 //
             }
-            
-            var criteria = new SearchCriteria 
-            { 
-                TextSearch = searchText,
-                CompletedOnly = showCompletedOnly ? true : null,
-                DateFrom = dateFrom,
-                DateTo = dateTo
-            };
-            filteredEntries = FilterEntries(entries, criteria);
-            
-            if (selectedTab >= filteredEntries.Count)
-            {
-                selectedTab = Math.Max(0, filteredEntries.Count - 1);
-            }
         }
         
         if (ImGui.IsItemHovered())
@@ -312,20 +253,6 @@ public class MainWindow : Window, IDisposable
             dateToText = today.ToString("yyyy-MM-dd");
             dateFrom = today;
             dateTo = today.Date.AddDays(1).AddSeconds(-1);
-            
-            var criteria = new SearchCriteria 
-            { 
-                TextSearch = searchText,
-                CompletedOnly = showCompletedOnly ? true : null,
-                DateFrom = dateFrom,
-                DateTo = dateTo
-            };
-            filteredEntries = FilterEntries(entries, criteria);
-            
-            if (selectedTab >= filteredEntries.Count)
-            {
-                selectedTab = Math.Max(0, filteredEntries.Count - 1);
-            }
         }
 
         ImGui.SameLine();
@@ -340,20 +267,6 @@ public class MainWindow : Window, IDisposable
             dateToText = endOfWeek.ToString("yyyy-MM-dd");
             dateFrom = startOfWeek;
             dateTo = endOfWeek.Date.AddDays(1).AddSeconds(-1);
-            
-            var criteria = new SearchCriteria 
-            { 
-                TextSearch = searchText,
-                CompletedOnly = showCompletedOnly ? true : null,
-                DateFrom = dateFrom,
-                DateTo = dateTo
-            };
-            filteredEntries = FilterEntries(entries, criteria);
-            
-            if (selectedTab >= filteredEntries.Count)
-            {
-                selectedTab = Math.Max(0, filteredEntries.Count - 1);
-            }
         }
 
         ImGui.SameLine();
@@ -367,31 +280,9 @@ public class MainWindow : Window, IDisposable
             dateToText = endOfMonth.ToString("yyyy-MM-dd");
             dateFrom = startOfMonth;
             dateTo = endOfMonth.Date.AddDays(1).AddSeconds(-1);
-            
-            var criteria = new SearchCriteria 
-            { 
-                TextSearch = searchText,
-                CompletedOnly = showCompletedOnly ? true : null,
-                DateFrom = dateFrom,
-                DateTo = dateTo
-            };
-            filteredEntries = FilterEntries(entries, criteria);
-            
-            if (selectedTab >= filteredEntries.Count)
-            {
-                selectedTab = Math.Max(0, filteredEntries.Count - 1);
-            }
         }
-        
-        if (string.IsNullOrEmpty(searchText) && !showCompletedOnly && dateFrom == null && dateTo == null)
-        {
-            if (filteredEntries.Count == 0 || entries.Count != lastEntriesCount || !ReferenceEquals(entries, lastEntriesRef))
-            {
-                filteredEntries = [.. entries.OrderBy(entry => entry.BeginAt)];
-                lastEntriesCount = entries.Count;
-                lastEntriesRef = entries;
-            }
-        }
+
+        UpdateHistoryFilteredEntries(entries);
         
         ImGui.Text($"Showing {filteredEntries.Count} of {entries.Count} entries");
         if (dateFrom.HasValue || dateTo.HasValue)
@@ -485,21 +376,9 @@ public class MainWindow : Window, IDisposable
 
             if (ImGui.Button(Language.DeleteHistoryEntry))
             {
-                if (Plugin.KeyState[VirtualKey.CONTROL])
+                if (Plugin.KeyState[VirtualKey.CONTROL] && DatabaseV2.RemoveEntry(entry))
                 {
-                    DatabaseV2.RemoveEntry(entry);
-
-                    var criteria = new SearchCriteria 
-                    { 
-                        TextSearch = searchText,
-                        CompletedOnly = showCompletedOnly ? true : null
-                    };
-                    filteredEntries = FilterEntries(DatabaseV2.Entries, criteria);
-
-                    if (selectedTab >= filteredEntries.Count)
-                    {
-                        selectedTab = Math.Max(0, filteredEntries.Count - 1);
-                    }
+                    UpdateHistoryFilteredEntries(DatabaseV2.Entries, forceRefresh: true);
                 }
             }
 
@@ -517,6 +396,51 @@ public class MainWindow : Window, IDisposable
         }
 
         ImGui.Columns(1);
+    }
+
+    private SearchCriteria BuildHistorySearchCriteria()
+    {
+        return new SearchCriteria
+        {
+            TextSearch = searchText,
+            CompletedOnly = showCompletedOnly ? true : null,
+            DateFrom = dateFrom,
+            DateTo = dateTo
+        };
+    }
+
+    private void UpdateHistoryFilteredEntries(List<DataEntryV2> entries, bool forceRefresh = false)
+    {
+        var criteria = BuildHistorySearchCriteria();
+        var shouldRefresh = forceRefresh
+            || !ReferenceEquals(entries, lastEntriesRef)
+            || entries.Count != lastEntriesCount
+            || lastHistoryCriteria == null
+            || !SearchCriteriaEquals(criteria, lastHistoryCriteria);
+
+        if (!shouldRefresh)
+        {
+            return;
+        }
+
+        filteredEntries = FilterEntries(entries, criteria);
+        lastEntriesCount = entries.Count;
+        lastEntriesRef = entries;
+        lastHistoryCriteria = criteria;
+
+        if (selectedTab >= filteredEntries.Count)
+        {
+            selectedTab = Math.Max(0, filteredEntries.Count - 1);
+        }
+    }
+
+    private static bool SearchCriteriaEquals(SearchCriteria left, SearchCriteria right)
+    {
+        return string.Equals(left.TextSearch, right.TextSearch, StringComparison.Ordinal)
+            && left.CompletedOnly == right.CompletedOnly
+            && Nullable.Equals(left.DateFrom, right.DateFrom)
+            && Nullable.Equals(left.DateTo, right.DateTo)
+            && string.Equals(left.JobFilter, right.JobFilter, StringComparison.Ordinal);
     }
 
     private void DrawSettingsTab()
