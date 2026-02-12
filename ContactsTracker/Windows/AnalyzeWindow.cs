@@ -34,6 +34,10 @@ public class AnalyzeWindow : Window, IDisposable
     private string dateToText = string.Empty;
     private DateTime? dateFrom = null;
     private DateTime? dateTo = null;
+    private int lastEntriesCount = -1;
+    private List<DataEntryV2>? lastEntriesRef = null;
+    private DateTime? lastDateFrom = null;
+    private DateTime? lastDateTo = null;
 
     private List<(ushort TerritoryId, uint RouletteId, int Count)> resultsExtractOccurrences = [];
     private List<(uint RouletteId, TimeSpan TotalDuration, TimeSpan AverageDuration, int Count)> resultsTotalDurations = [];
@@ -333,13 +337,13 @@ public class AnalyzeWindow : Window, IDisposable
         if (!ImGui.CollapsingHeader(Language.QueryRouletteFrequency)) return;
 
         ImGui.SetNextItemWidth(ImGui.CalcTextSize("Duty Roulette: High-level Dungeons").X + 50);
-        using (var combo = ImRaii.Combo("##ByRoulette", ExcelHelper.GetRouletteName((uint)selectedRoulette)))
+        using (var combo = ImRaii.Combo("##ByRoulette", ExcelHelper.GetPoppedContentType((uint)selectedRoulette)))
         {
             if (combo.Success)
             {
                 foreach (var roulette in Enum.GetValues<RouletteType>())
                 {
-                    if (ImGui.Selectable(ExcelHelper.GetRouletteName((uint)roulette), selectedRoulette == roulette))
+                    if (ImGui.Selectable(ExcelHelper.GetPoppedContentType((uint)roulette), selectedRoulette == roulette))
                     {
                         selectedRoulette = roulette;
                         byRouletteState.IsClicked = false;
@@ -412,7 +416,22 @@ public class AnalyzeWindow : Window, IDisposable
 
     private void UpdateFilteredEntries(bool resetQueries = true)
     {
-        var entries = DatabaseV2.Entries.AsEnumerable();
+        var entriesList = DatabaseV2.Entries;
+        var shouldRefresh = !ReferenceEquals(entriesList, lastEntriesRef)
+            || entriesList.Count != lastEntriesCount
+            || !Nullable.Equals(dateFrom, lastDateFrom)
+            || !Nullable.Equals(dateTo, lastDateTo);
+
+        if (!shouldRefresh)
+        {
+            if (resetQueries)
+            {
+                ResetQueryResults();
+            }
+            return;
+        }
+
+        var entries = entriesList.AsEnumerable();
 
         if (dateFrom.HasValue)
         {
@@ -425,6 +444,10 @@ public class AnalyzeWindow : Window, IDisposable
         }
 
         filteredEntries = [.. entries];
+        lastEntriesCount = entriesList.Count;
+        lastEntriesRef = entriesList;
+        lastDateFrom = dateFrom;
+        lastDateTo = dateTo;
 
         if (resetQueries)
         {

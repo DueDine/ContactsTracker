@@ -27,6 +27,8 @@ public class MainWindow : Window, IDisposable
     private string dateToText = string.Empty;
     private DateTime? dateFrom = null;
     private DateTime? dateTo = null;
+    private int lastEntriesCount = -1;
+    private List<DataEntryV2>? lastEntriesRef = null;
 
     public class SearchCriteria
     {
@@ -383,7 +385,12 @@ public class MainWindow : Window, IDisposable
         
         if (string.IsNullOrEmpty(searchText) && !showCompletedOnly && dateFrom == null && dateTo == null)
         {
-            filteredEntries = [.. entries.OrderBy(entry => entry.BeginAt)];
+            if (filteredEntries.Count == 0 || entries.Count != lastEntriesCount || !ReferenceEquals(entries, lastEntriesRef))
+            {
+                filteredEntries = [.. entries.OrderBy(entry => entry.BeginAt)];
+                lastEntriesCount = entries.Count;
+                lastEntriesRef = entries;
+            }
         }
         
         ImGui.Text($"Showing {filteredEntries.Count} of {entries.Count} entries");
