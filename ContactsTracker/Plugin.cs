@@ -87,11 +87,15 @@ public sealed class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
+        PluginInterface.UiBuilder.Draw -= DrawUI;
+        PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUI;
+        PluginInterface.UiBuilder.OpenConfigUi -= ToggleAnalyzeUI;
+        PluginInterface.LanguageChanged -= OnLanguageChanged;
+
         WindowSystem.RemoveAllWindows();
         MainWindow.Dispose();
         handler.Dispose();
         CommandManager.RemoveHandler(CommandName);
-        PluginInterface.LanguageChanged -= OnLanguageChanged;
     }
 
     private void OnCommand(string command, string args)
