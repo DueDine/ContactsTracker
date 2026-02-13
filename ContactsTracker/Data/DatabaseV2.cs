@@ -35,15 +35,22 @@ public class DatabaseV2
             Save();
         }
 
-        var content = JsonConvert.DeserializeObject<List<DataEntryV2>>(File.ReadAllText(DataPath));
+        try
+        {
+            var content = JsonConvert.DeserializeObject<List<DataEntryV2>>(File.ReadAllText(DataPath));
 
-        if (content != null)
-        {
-            Entries = content;
+            if (content != null)
+            {
+                Entries = content;
+            }
+            else
+            {
+                Plugin.Logger.Error("Failed to load data!");
+            }
         }
-        else
+        catch (Exception e)
         {
-            Plugin.Logger.Error("Failed to load data!");
+            Plugin.Logger.Error($"Failed to load data: {e.Message}");
         }
     }
 
@@ -64,17 +71,23 @@ public class DatabaseV2
             return null;
         }
 
-        var content = JsonConvert.DeserializeObject<DataEntryV2>(File.ReadAllText(TempPath));
+        try
+        {
+            var content = JsonConvert.DeserializeObject<DataEntryV2>(File.ReadAllText(TempPath));
 
-        if (content != null)
-        {
-            return content;
-        }
-        else
-        {
+            if (content != null)
+            {
+                return content;
+            }
+
             Plugin.Logger.Error("Failed to load in-progress entry!");
-            return null;
         }
+        catch (Exception e)
+        {
+            Plugin.Logger.Error($"Failed to load in-progress entry: {e.Message}");
+        }
+
+        return null;
     }
 
     public static void SaveInProgressEntry(DataEntryV2 entry)

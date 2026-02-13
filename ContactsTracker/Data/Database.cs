@@ -36,15 +36,22 @@ public class Database
             Save(); // Initialize the file
         }
 
-        var content = JsonConvert.DeserializeObject<List<DataEntry>>(File.ReadAllText(dataPath));
+        try
+        {
+            var content = JsonConvert.DeserializeObject<List<DataEntry>>(File.ReadAllText(dataPath));
 
-        if (content != null)
-        {
-            Entries = content;
+            if (content != null)
+            {
+                Entries = content;
+            }
+            else
+            {
+                Plugin.Logger.Verbose("Failed to load data.json!");
+            }
         }
-        else
+        catch (Exception e)
         {
-            Plugin.Logger.Verbose("Failed to load data.json!");
+            Plugin.Logger.Error($"Failed to load data.json: {e.Message}");
         }
     }
 
@@ -56,15 +63,20 @@ public class Database
             return null;
         }
 
-        var content = File.ReadAllText(tempPath);
-        if (content != null)
+        try
         {
-            return JsonConvert.DeserializeObject<DataEntry>(content);
+            var content = File.ReadAllText(tempPath);
+            if (content != null)
+            {
+                return JsonConvert.DeserializeObject<DataEntry>(content);
+            }
         }
-        else
+        catch (Exception e)
         {
-            return null;
+            Plugin.Logger.Error($"Failed to load temp.json: {e.Message}");
         }
+
+        return null;
     }
 
     public static void SaveInProgressEntry(DataEntry entry)
