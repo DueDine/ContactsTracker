@@ -61,7 +61,6 @@ public sealed class Plugin : IDalamudPlugin
             HelpMessage = """
                           Open Plugin
                           /ctracker analyze -> AnalyzeWindow
-                          /ctracker reload -> Reload Database
                           """
         });
 
@@ -106,9 +105,6 @@ public sealed class Plugin : IDalamudPlugin
             {
                 case "analyze":
                     AnalyzeWindow.Toggle();
-                    break;
-                case "reload":
-                    // Database.Load();
                     break;
                 default:
                     MainWindow.Toggle();
