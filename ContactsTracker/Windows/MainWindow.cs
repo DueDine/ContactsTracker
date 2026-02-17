@@ -11,6 +11,7 @@ using System;
 using System.Linq;
 using System.Numerics;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ContactsTracker.Windows;
 
@@ -30,6 +31,10 @@ public class MainWindow : Window, IDisposable
     private int lastEntriesCount = -1;
     private List<DataEntryV2>? lastEntriesRef = null;
     private SearchCriteria? lastHistoryCriteria = null;
+    private Task<(bool Success, string Message)>? dataOperationTask = null;
+    private string currentDataOperation = string.Empty;
+    private string dataOperationResultMessage = string.Empty;
+    private bool dataOperationResultIsError = false;
 
     public class SearchCriteria
     {
@@ -56,6 +61,8 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
+        ProcessDataOperationCompletion();
+
         using var tabBar = ImRaii.TabBar("MainTabBar");
         if (!tabBar) return;
 
@@ -538,39 +545,51 @@ public class MainWindow : Window, IDisposable
 
         if (ImGui.CollapsingHeader(Language.SettingTabData))
         {
-            if (ImGui.Button(Language.DataExport))
+            var isDataOperationRunning = dataOperationTask is { IsCompleted: false };
+            using (var disabled = ImRaii.Disabled(isDataOperationRunning))
             {
-                DatabaseV2.Export();
-            }
-
-            ImGui.SameLine();
-
-            if (ImGui.Button(Language.DataImport))
-            {
-                isFileDialogOpen = true;
-                Plugin.FileDialogManager.OpenFileDialog("Select a CSV File", ".csv", (success, paths) =>
+                if (ImGui.Button(Language.DataExport))
                 {
-                    if (success && paths.Count > 0)
-                    {
-                        var path = paths.First();
-                        var ok = DatabaseV2.Import(path);
-                        if (ok)
-                        {
-                            Plugin.ChatGui.Print(Language.DataImportSuccess);
-                        }
-                        else
-                        {
-                            Plugin.ChatGui.PrintError(Language.DataImportFail);
-                        }
-                    }
-                    isFileDialogOpen = false;
-                }, 1, Plugin.PluginInterface.GetPluginConfigDirectory(), false);
+                    StartDataOperation(Language.DataExport, DatabaseV2.Export);
+                }
 
+                ImGui.SameLine();
+
+                if (ImGui.Button(Language.DataImport))
+                {
+                    isFileDialogOpen = true;
+                    Plugin.FileDialogManager.OpenFileDialog("Select a CSV File", ".csv", (success, paths) =>
+                    {
+                        if (success && paths.Count > 0)
+                        {
+                            var path = paths.First();
+                            StartDataOperation(Language.DataImport, () => DatabaseV2.Import(path));
+                        }
+                        isFileDialogOpen = false;
+                    }, 1, Plugin.PluginInterface.GetPluginConfigDirectory(), false);
+
+                }
+                
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.SetTooltip(Language.ButtonImportWarning);
+                }
             }
 
-            if (ImGui.IsItemHovered())
+            if (isDataOperationRunning)
             {
-                ImGui.SetTooltip(Language.ButtonImportWarning);
+                ImGui.TextWrapped($"Working: {currentDataOperation}...");
+            }
+            else if (!string.IsNullOrEmpty(dataOperationResultMessage))
+            {
+                if (dataOperationResultIsError)
+                {
+                    ImGui.TextColored(ImGuiColors.DalamudRed, dataOperationResultMessage);
+                }
+                else
+                {
+                    ImGui.TextWrapped(dataOperationResultMessage);
+                }
             }
 
             if (isFileDialogOpen)
@@ -685,5 +704,43 @@ public class MainWindow : Window, IDisposable
             
             return true;
         }).OrderBy(entry => entry.BeginAt)];
+    }
+
+    private void StartDataOperation(string operationName, Func<(bool Success, string Message)> operation)
+    {
+        if (dataOperationTask is { IsCompleted: false })
+        {
+            dataOperationResultMessage = "Another data operation is still running.";
+            dataOperationResultIsError = true;
+            return;
+        }
+
+        currentDataOperation = operationName;
+        dataOperationResultMessage = string.Empty;
+        dataOperationResultIsError = false;
+        dataOperationTask = Task.Run(operation);
+    }
+
+    private void ProcessDataOperationCompletion()
+    {
+        if (dataOperationTask == null || !dataOperationTask.IsCompleted) return;
+
+        try
+        {
+            var result = dataOperationTask.GetAwaiter().GetResult();
+            dataOperationResultMessage = result.Message;
+            dataOperationResultIsError = !result.Success;
+        }
+        catch (Exception e)
+        {
+            Plugin.Logger.Error($"Data operation failed: {e.Message}");
+            dataOperationResultMessage = "Data operation failed.";
+            dataOperationResultIsError = true;
+        }
+        finally
+        {
+            currentDataOperation = string.Empty;
+            dataOperationTask = null;
+        }
     }
 }
