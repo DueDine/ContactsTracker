@@ -181,13 +181,13 @@ public class DatabaseV2
                 return false;
             }
 
-            Reset(); // Clear existing entries
-
-            foreach (var entry in importedEntries)
-            {
-                InsertEntry(entry);
-            }
+            Entries.AddRange(importedEntries);
+            var removedDuplicates = RemoveDuplicateEntries();
             Save();
+            if (removedDuplicates > 0)
+            {
+                Plugin.Logger.Information($"Removed {removedDuplicates} duplicate entries after import.");
+            }
             return true;
         }
         catch (Exception e)
@@ -195,5 +195,18 @@ public class DatabaseV2
             Plugin.Logger.Error(e.Message);
             return false;
         }
+    }
+
+    private static int RemoveDuplicateEntries()
+    {
+        var uniqueEntries = Entries.Distinct().ToList();
+
+        var removedCount = Entries.Count - uniqueEntries.Count;
+        if (removedCount > 0)
+        {
+            Entries = uniqueEntries;
+        }
+
+        return removedCount;
     }
 }

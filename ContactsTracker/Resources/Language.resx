@@ -136,7 +136,7 @@
     <value>Are you sure you want to delete ALL? This action is irreversible.</value>
   </data>
   <data name="ButtonImportWarning" xml:space="preserve">
-    <value>It will clear existing entries.</value>
+    <value>It will add entries and remove duplicates.</value>
   </data>
   <data name="ButtonQuery" xml:space="preserve">
     <value>Query</value>

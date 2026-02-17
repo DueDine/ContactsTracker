@@ -1,11 +1,12 @@
 using ContactsTracker.Logic;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ContactsTracker.Data;
 
 // Store ID only. Get name when displayed. Support language change.
-public class DataEntryV2(ushort territoryId, uint rouletteId)
+public class DataEntryV2(ushort territoryId, uint rouletteId) : IEquatable<DataEntryV2>
 {
     public int Version { get; set; } = 3; // Later will increase this not configuration
     public ushort TerritoryId { get; set; } = territoryId;
@@ -39,6 +40,46 @@ public class DataEntryV2(ushort territoryId, uint rouletteId)
     }
 
     public static void Reset() => Instance = null;
+
+    public bool Equals(DataEntryV2? other)
+    {
+        if (ReferenceEquals(this, other)) return true;
+        if (other is null) return false;
+
+        if (TerritoryId != other.TerritoryId
+            || RouletteId != other.RouletteId
+            || IsCompleted != other.IsCompleted
+            || BeginAt != other.BeginAt
+            || EndAt != other.EndAt
+            || Settings != other.Settings
+            || !string.Equals(PlayerJobAbbr, other.PlayerJobAbbr, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return PartyMembers.SequenceEqual(other.PartyMembers, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public override bool Equals(object? obj) => obj is DataEntryV2 other && Equals(other);
+
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(TerritoryId);
+        hash.Add(RouletteId);
+        hash.Add(IsCompleted);
+        hash.Add(BeginAt);
+        hash.Add(EndAt);
+        hash.Add(PlayerJobAbbr, StringComparer.Ordinal);
+        hash.Add((int)Settings);
+        hash.Add(PartyMembers.Count);
+        foreach (var member in PartyMembers)
+        {
+            hash.Add(member, StringComparer.OrdinalIgnoreCase);
+        }
+
+        return hash.ToHashCode();
+    }
 }
 
 [Flags]
