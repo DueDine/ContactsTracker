@@ -182,7 +182,7 @@ public class DatabaseV2
             }
 
             Entries.AddRange(importedEntries);
-            var removedDuplicates = RemoveDuplicateEntries();
+            var removedDuplicates = DeduplicateEntries(saveChanges: false);
             Save();
             if (removedDuplicates > 0)
             {
@@ -197,7 +197,7 @@ public class DatabaseV2
         }
     }
 
-    private static int RemoveDuplicateEntries()
+    public static int DeduplicateEntries(bool saveChanges = true)
     {
         var uniqueEntries = Entries.Distinct().ToList();
 
@@ -205,6 +205,10 @@ public class DatabaseV2
         if (removedCount > 0)
         {
             Entries = uniqueEntries;
+            if (saveChanges)
+            {
+                Save();
+            }
         }
 
         return removedCount;

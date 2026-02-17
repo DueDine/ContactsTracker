@@ -54,6 +54,13 @@ public class EntryV1ToV2
                 }
                 DatabaseV2.InsertEntry(DataEntryV2.Instance);
             }
+
+            var removedDuplicates = DatabaseV2.DeduplicateEntries();
+            if (removedDuplicates > 0)
+            {
+                Plugin.Logger.Information($"Removed {removedDuplicates} duplicate entries after migration");
+            }
+
             Plugin.Logger.Information($"Migrated {oldEntries.Count} entries");
             return true;
         }
