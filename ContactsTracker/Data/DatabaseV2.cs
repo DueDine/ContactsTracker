@@ -135,17 +135,21 @@ public class DatabaseV2
                 return (false, "No data available to export.");
             }
 
-            var flattenedRecords = records.Select(entry => new
-            {
-                entry.TerritoryId,
-                entry.RouletteId,
-                entry.IsCompleted,
-                entry.BeginAt,
-                entry.EndAt,
-                entry.PlayerJobAbbr,
-                PartyMembers = string.Join("|", entry.PartyMembers),
-                Settings = ((int)entry.Settings)
-            });
+            var flattenedRecords = records
+                .OrderBy(entry => entry.BeginAt)
+                .Select(entry => new
+                {
+                    entry.TerritoryId,
+                    entry.RouletteId,
+                    entry.IsCompleted,
+                    BeginAt = entry.BeginAt.ToString("O", CultureInfo.InvariantCulture),
+                    EndAt = entry.EndAt == DateTime.MinValue
+                        ? string.Empty
+                        : entry.EndAt.ToString("O", CultureInfo.InvariantCulture),
+                    entry.PlayerJobAbbr,
+                    PartyMembers = string.Join("|", entry.PartyMembers),
+                    Settings = (int)entry.Settings
+                });
 
             using var writer = new StreamWriter(exportPath);
             using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
@@ -190,15 +194,25 @@ public class DatabaseV2
                 var partyMembers = csv.GetField<string>("PartyMembers");
                 var settings = csv.GetField<int>("Settings");
                 if (territoryId == 0) continue;
-                List<string> parsedPartyMembers = string.IsNullOrWhiteSpace(partyMembers)
+
+                if (!TryParseCsvDateTime(beginAt, allowEmpty: false, out var parsedBeginAt))
+                {
+                    return (false, $"Invalid BeginAt at row {csv.Parser.Row}.");
+                }
+                if (!TryParseCsvDateTime(endAt, allowEmpty: true, out var parsedEndAt))
+                {
+                    return (false, $"Invalid EndAt at row {csv.Parser.Row}.");
+                }
+
+                var parsedPartyMembers = string.IsNullOrWhiteSpace(partyMembers)
                     ? new List<string>()
                     : [.. partyMembers.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)];
 
                 var entry = new DataEntryV2(territoryId, rouletteId)
                 {
                     IsCompleted = isCompleted,
-                    BeginAt = DateTime.Parse(beginAt!),
-                    EndAt = DateTime.Parse(endAt!),
+                    BeginAt = parsedBeginAt,
+                    EndAt = parsedEndAt,
                     PlayerJobAbbr = playerJobAbbr!,
                     PartyMembers = parsedPartyMembers,
                     Settings = (DutySettings)settings
@@ -232,6 +246,34 @@ public class DatabaseV2
             Plugin.Logger.Error(e.Message);
             return (false, "Failed to import.");
         }
+    }
+
+    private static bool TryParseCsvDateTime(string? input, bool allowEmpty, out DateTime parsed)
+    {
+        if (string.IsNullOrWhiteSpace(input) || (allowEmpty && string.Equals(input, "N/A", StringComparison.OrdinalIgnoreCase)))
+        {
+            parsed = DateTime.MinValue;
+            return allowEmpty;
+        }
+
+        if (DateTime.TryParseExact(input, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out parsed))
+        {
+            return true;
+        }
+
+        var styles = DateTimeStyles.AllowWhiteSpaces;
+        if (DateTime.TryParse(input, CultureInfo.InvariantCulture, styles, out parsed))
+        {
+            return true;
+        }
+
+        if (DateTime.TryParse(input, CultureInfo.CurrentCulture, styles, out parsed))
+        {
+            return true;
+        }
+
+        parsed = DateTime.MinValue;
+        return false;
     }
 
     public static int DeduplicateEntries(bool saveChanges = true)
