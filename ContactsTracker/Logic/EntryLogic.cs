@@ -35,7 +35,8 @@ public static class EntryLogic
 
             if (numOfParty > 1 && numOfParty <= 8)
             {
-                var groupManager = GroupManager.Instance()->GetGroup();
+                var groupManagerInstance = GroupManager.Instance();
+                var group = groupManagerInstance != null ? groupManagerInstance->GetGroup() : null;
                 var names = new string[numOfParty];
 
                 for (var i = 0; i < numOfParty; i++)
@@ -43,16 +44,31 @@ public static class EntryLogic
                     var partyMember = Plugin.PartyList[i];
                     if (partyMember == null) continue;
 
-                    var worldID = groupManager->GetPartyMemberByContentId((ulong)partyMember.ContentId)->HomeWorld;
-                    var worldName = ExcelHelper.GetWorldName(worldID);
-                    names[i] = $"{partyMember.Name} @ {worldName}";
+                    var worldName = string.Empty;
+                    if (group != null)
+                    {
+                        var memberInGroup = group->GetPartyMemberByContentId((ulong)partyMember.ContentId);
+                        if (memberInGroup != null && memberInGroup->HomeWorld != 0)
+                        {
+                            worldName = ExcelHelper.GetWorldName(memberInGroup->HomeWorld);
+                        }
+                    }
+
+                    names[i] = string.IsNullOrEmpty(worldName)
+                        ? $"{partyMember.Name}"
+                        : $"{partyMember.Name} @ {worldName}";
+
                     if (configuration.LogPartyClass)
                     {
                         var jobName = partyMember.ClassJob.Value.Abbreviation.ExtractText();
                         names[i] += $" ({jobName})";
                     }
                 }
-                entry.PartyMembers.AddRange(entry.PartyMembers.Except(names));
+                var namesToAdd = names
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Except(entry.PartyMembers, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                entry.PartyMembers.AddRange(namesToAdd);
             }
         }
         DatabaseV2.InsertEntry(entry);
@@ -79,23 +95,34 @@ public static class EntryLogic
 
         var numOfParty = partyList.Length;
         var names = new string[numOfParty];
-        var groupManager = GroupManager.Instance()->GetGroup();
-        if (groupManager == null) return;
+        var groupManagerInstance = GroupManager.Instance();
+        var group = groupManagerInstance != null ? groupManagerInstance->GetGroup() : null;
 
         for (var i = 0; i < numOfParty; i++)
         {
             var partyMember = Plugin.PartyList[i];
             if (partyMember == null) continue;
 
-            var worldID = groupManager->GetPartyMemberByContentId((ulong)partyMember.ContentId)->HomeWorld;
-            var worldName = ExcelHelper.GetWorldName(worldID);
-            names[i] = $"{partyMember.Name} @ {worldName}";
+            var worldName = string.Empty;
+            if (group != null)
+            {
+                var memberInGroup = group->GetPartyMemberByContentId((ulong)partyMember.ContentId);
+                if (memberInGroup != null && memberInGroup->HomeWorld != 0)
+                {
+                    worldName = ExcelHelper.GetWorldName(memberInGroup->HomeWorld);
+                }
+            }
+
+            names[i] = string.IsNullOrEmpty(worldName)
+                ? $"{partyMember.Name}"
+                : $"{partyMember.Name} @ {worldName}";
+                
             if (configuration.LogPartyClass)
             {
                 var jobName = partyMember.ClassJob.Value.Abbreviation.ExtractText();
                 names[i] += $" ({jobName})";
             }
         }
-        entry.PartyMembers.AddRange(names);
+        entry.PartyMembers.AddRange(names.Where(name => !string.IsNullOrWhiteSpace(name)));
     }
 }

@@ -25,9 +25,17 @@ public static class ExcelHelper
         }
 
         var sheet = Plugin.DataManager.GetExcelSheet<TerritoryType>();
-        var data = sheet.GetRow(territoryID).ContentFinderCondition.Value.Name.ExtractText();
-        TerritoryNameCache[territoryID] = data;
-        return data;
+        if (sheet != null && sheet.TryGetRow(territoryID, out var row))
+        {
+            var data = row.ContentFinderCondition.Value.Name.ExtractText();
+            if (!string.IsNullOrWhiteSpace(data))
+            {
+                TerritoryNameCache[territoryID] = data;
+                return data;
+            }
+        }
+
+        return string.Empty;
     }
 
     public static string GetPoppedContentType(uint rouletteID)
@@ -39,9 +47,17 @@ public static class ExcelHelper
         }
 
         var sheet = Plugin.DataManager.GetExcelSheet<ContentRoulette>();
-        var data = sheet.GetRow(rouletteID).Name.ExtractText();
-        RouletteNameCache[rouletteID] = data;
-        return data;
+        if (sheet != null && sheet.TryGetRow(rouletteID, out var row))
+        {
+            var data = row.Name.ExtractText();
+            if (!string.IsNullOrWhiteSpace(data))
+            {
+                RouletteNameCache[rouletteID] = data;
+                return data;
+            }
+        }
+
+        return string.Empty;
     }
 
     public static string GetWorldName(ushort worldID)
@@ -53,8 +69,16 @@ public static class ExcelHelper
         }
 
         var sheet = Plugin.DataManager.GetExcelSheet<World>();
-        var data = sheet.GetRow(worldID).Name.ExtractText();
-        WorldNameCache[worldID] = data;
-        return data;
+        if (sheet != null && sheet.TryGetRow(worldID, out var row))
+        {
+            var data = row.Name.ExtractText();
+            if (!string.IsNullOrWhiteSpace(data))
+            {
+                WorldNameCache[worldID] = data;
+                return data;
+            }
+        }
+
+        return string.Empty;
     }
 }
