@@ -1,5 +1,6 @@
 using ContactsTracker.Data;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.DutyState;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
@@ -60,7 +61,7 @@ public class Handler
         }
     }
 
-    private void OnTerritoryChanged(ushort territoryID)
+    private void OnTerritoryChanged(uint territoryID)
     {
         if (Configuration.EnableLogging == false)
         {
@@ -135,7 +136,7 @@ public class Handler
         }
     }
 
-    private void OnDutyStarted(object? sender, ushort territoryID)
+    private void OnDutyStarted(IDutyStateEventArgs args)
     {
         if (Configuration.EnableLogging == false)
         {
@@ -144,14 +145,14 @@ public class Handler
 
         if (DataEntryV2.Instance != null)
         {
-            if (DataEntryV2.Instance.TerritoryId == territoryID)
+            if (DataEntryV2.Instance.TerritoryId == args.TerritoryType.RowId)
             {
                 EntryLogic.StartRecord(DataEntryV2.Instance, Configuration);
             }
         }
     }
 
-    private void OnDutyCompleted(object? sender, ushort territoryID)
+    private void OnDutyCompleted(IDutyStateEventArgs args)
     {
         if (Configuration.EnableLogging == false)
         {
@@ -176,10 +177,10 @@ public class Handler
 
         var queueInfo = ContentsFinder.Instance()->QueueInfo;
         var queueEntry = queueInfo.PoppedQueueEntry;
-        if (queueEntry.ContentType == ContentsId.ContentsType.Roulette)
+        if (queueEntry.ContentType == ContentsType.Roulette)
         {
             DataEntryV2.Reset(); // Reset. Some may choose to abandon the roulette
-            DataEntryV2.Initialize(0, queueEntry.ConditionId);
+            DataEntryV2.Initialize(0, queueEntry.Id);
             DataEntryV2.SetSettings(queueInfo.PoppedContentIsUnrestrictedParty, queueInfo.PoppedContentIsMinimalIL, queueInfo.PoppedContentIsLevelSync, queueInfo.PoppedContentIsSilenceEcho, queueInfo.PoppedContentIsExplorerMode);
         }
         else
