@@ -7,7 +7,7 @@ namespace ContactsTracker.Query;
 
 public static class RouletteQueries
 {
-    public static List<(ushort TerritoryId, uint RouletteId, int Count)> ExtractOccurrences(List<DataEntryV2> Entries)
+    public static List<(uint TerritoryId, uint RouletteId, int Count)> ExtractOccurrences(List<DataEntryV2> Entries)
     {
         return [.. Entries
             .Where(entry => entry.RouletteId != 0)
@@ -38,7 +38,7 @@ public static class RouletteQueries
             })];
     }
 
-    public static List<(ushort TerritoryId, int Count)> OccurrencesByRoulette(List<DataEntryV2> Entries, uint rouletteId)
+    public static List<(uint TerritoryId, int Count)> OccurrencesByRoulette(List<DataEntryV2> Entries, uint rouletteId)
     {
         return [.. Entries
             .Where(entry => entry.RouletteId == rouletteId)

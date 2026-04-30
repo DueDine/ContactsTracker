@@ -40,9 +40,9 @@ public class AnalyzeWindow : Window, IDisposable
     private DateTime? lastDateFrom = null;
     private DateTime? lastDateTo = null;
 
-    private List<(ushort TerritoryId, uint RouletteId, int Count)> resultsExtractOccurrences = [];
+    private List<(uint TerritoryId, uint RouletteId, int Count)> resultsExtractOccurrences = [];
     private List<(uint RouletteId, TimeSpan TotalDuration, TimeSpan AverageDuration, int Count)> resultsTotalDurations = [];
-    private List<(ushort TerritoryId, int Count)> resultsByRoulette = [];
+    private List<(uint TerritoryId, int Count)> resultsByRoulette = [];
     private List<DataEntryV2> filteredEntries = [];
 
     public AnalyzeWindow(Plugin plugin)

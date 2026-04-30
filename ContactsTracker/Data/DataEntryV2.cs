@@ -6,10 +6,10 @@ using System.Linq;
 namespace ContactsTracker.Data;
 
 // Store ID only. Get name when displayed. Support language change.
-public class DataEntryV2(ushort territoryId, uint rouletteId) : IEquatable<DataEntryV2>
+public class DataEntryV2(uint territoryId, uint rouletteId) : IEquatable<DataEntryV2>
 {
     public int Version { get; set; } = 3; // Later will increase this not configuration
-    public ushort TerritoryId { get; set; } = territoryId;
+    public uint TerritoryId { get; set; } = territoryId;
     public uint RouletteId { get; set; } = rouletteId;
     public bool IsCompleted { get; set; } = false;
     public DateTime BeginAt { get; set; } = DateTime.Now;

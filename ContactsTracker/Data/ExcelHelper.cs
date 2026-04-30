@@ -5,7 +5,7 @@ namespace ContactsTracker.Data;
 
 public static class ExcelHelper
 {
-    private static readonly Dictionary<ushort, string> TerritoryNameCache = [];
+    private static readonly Dictionary<uint, string> TerritoryNameCache = [];
     private static readonly Dictionary<uint, string> RouletteNameCache = [];
     private static readonly Dictionary<ushort, string> WorldNameCache = [];
 
@@ -16,7 +16,7 @@ public static class ExcelHelper
         WorldNameCache.Clear();
     }
 
-    public static string GetTerritoryName(ushort territoryID)
+    public static string GetTerritoryName(uint territoryID)
     {
         if (territoryID == 0) return "Unknown";
         if (TerritoryNameCache.TryGetValue(territoryID, out var cached))
