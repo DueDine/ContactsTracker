@@ -12,6 +12,7 @@ using System.Linq;
 using System.Numerics;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace ContactsTracker.Windows;
 
@@ -373,10 +374,23 @@ public class MainWindow : Window, IDisposable
             }
             else
             {
-                foreach (var member in entry.PartyMembers)
+                for (var i = 0; i < entry.PartyMembers.Count; i++)
                 {
+                    var member = entry.PartyMembers[i];
                     if (!string.IsNullOrEmpty(member))
-                        ImGui.BulletText(member);
+                    {
+                        ImGui.Bullet();
+                        ImGui.SameLine();
+                        if (ImGui.Selectable($"{member}##PartyMember{i}", false, ImGuiSelectableFlags.None, ImGui.CalcTextSize(member)))
+                        {
+                            ImGui.SetClipboardText(GetPartyMemberClipboardName(member));
+                        }
+
+                        if (ImGui.IsItemHovered())
+                        {
+                            ImGui.SetTooltip("Click to copy");
+                        }
+                    }
                 }
             }
             ImGui.Spacing();
@@ -403,6 +417,12 @@ public class MainWindow : Window, IDisposable
         }
 
         ImGui.Columns(1);
+    }
+
+    private static string GetPartyMemberClipboardName(string member)
+    {
+        var match = Regex.Match(member, @"^\s*(?<name>.*?)(?:\s+@\s+.*|\s+\([^)]+\))?\s*$");
+        return match.Groups["name"].Value;
     }
 
     private SearchCriteria BuildHistorySearchCriteria()
