@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 
 namespace ContactsTracker.Data;
@@ -14,6 +15,7 @@ public class DatabaseV2
 {
     public static int Version { get; set; } = 2;
     private static readonly string DataPath = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, $"data_v{Version}.json");
+    private static readonly string SaveTempPath = $"{DataPath}.tmp";
     private static readonly string TempPath = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, $"temp_v{Version}.json");
     private static readonly Lock EntriesLock = new();
     public static bool isDirty = false;
@@ -35,7 +37,24 @@ public class DatabaseV2
     {
         lock (EntriesLock)
         {
-            File.WriteAllText(DataPath, JsonConvert.SerializeObject(Entries));
+            var content = JsonConvert.SerializeObject(Entries);
+            using (var stream = new FileStream(SaveTempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                using (var writer = new StreamWriter(stream, new UTF8Encoding(false), bufferSize: 4096, leaveOpen: true))
+                {
+                    writer.Write(content);
+                }
+                stream.Flush(flushToDisk: true);
+            }
+
+            if (File.Exists(DataPath))
+            {
+                File.Replace(SaveTempPath, DataPath, null);
+            }
+            else
+            {
+                File.Move(SaveTempPath, DataPath);
+            }
         }
     }
 
