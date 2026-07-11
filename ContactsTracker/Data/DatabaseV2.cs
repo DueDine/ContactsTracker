@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 
 namespace ContactsTracker.Data;
@@ -38,14 +37,7 @@ public class DatabaseV2
         lock (EntriesLock)
         {
             var content = JsonConvert.SerializeObject(Entries);
-            using (var stream = new FileStream(SaveTempPath, FileMode.Create, FileAccess.Write, FileShare.None))
-            {
-                using (var writer = new StreamWriter(stream, new UTF8Encoding(false), bufferSize: 4096, leaveOpen: true))
-                {
-                    writer.Write(content);
-                }
-                stream.Flush(flushToDisk: true);
-            }
+            File.WriteAllText(SaveTempPath, content);
 
             if (File.Exists(DataPath))
             {
