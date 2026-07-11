@@ -328,19 +328,26 @@ public class MainWindow : Window, IDisposable
             }
             ImGui.Separator();
 
-            // Use filtered entries instead of all entries
-            for (var i = filteredEntries.Count - 1; i >= 0; i--)
+            var clipper = new ImGuiListClipper();
+            clipper.Begin(filteredEntries.Count);
+            while (clipper.Step())
             {
-                var isSelected = selectedTab == i;
-                if (ImGui.Selectable($"{ExcelHelper.GetTerritoryName(filteredEntries[i].TerritoryId)} - {filteredEntries[i].BeginAt:yyyy-MM-dd HH:mm:ss}", selectedTab == i))
+                for (var row = clipper.DisplayStart; row < clipper.DisplayEnd; row++)
                 {
-                    selectedTab = i;
-                }
-                if (isSelected)
-                {
-                    ImGui.SetItemDefaultFocus();
+                    var entryIndex = filteredEntries.Count - 1 - row;
+                    var entry = filteredEntries[entryIndex];
+                    var isSelected = selectedTab == entryIndex;
+                    if (ImGui.Selectable($"{ExcelHelper.GetTerritoryName(entry.TerritoryId)} - {entry.BeginAt:yyyy-MM-dd HH:mm:ss}", isSelected))
+                    {
+                        selectedTab = entryIndex;
+                    }
+                    if (isSelected)
+                    {
+                        ImGui.SetItemDefaultFocus();
+                    }
                 }
             }
+            clipper.End();
         }
 
         ImGui.NextColumn();
