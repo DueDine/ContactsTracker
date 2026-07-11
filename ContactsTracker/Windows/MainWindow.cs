@@ -692,19 +692,21 @@ public class MainWindow : Window, IDisposable
 
     private static List<DataEntryV2> FilterEntries(List<DataEntryV2> entries, SearchCriteria criteria)
     {
+        var searchText = criteria.TextSearch;
+
         return [.. entries.Where(entry => 
         {
             // Text search across multiple fields
-            if (!string.IsNullOrEmpty(criteria.TextSearch))
+            if (!string.IsNullOrEmpty(searchText))
             {
-                var searchText = criteria.TextSearch.ToLower();
-                var territoryName = ExcelHelper.GetTerritoryName(entry.TerritoryId).ToLower();
-                var rouletteName = ExcelHelper.GetPoppedContentType(entry.RouletteId).ToLower();
-                var partyText = string.Join(" ", entry.PartyMembers).ToLower();
-                
-                if (!territoryName.Contains(searchText) && 
-                    !rouletteName.Contains(searchText) && 
-                    !partyText.Contains(searchText) &&
+                var territoryName = ExcelHelper.GetTerritoryName(entry.TerritoryId);
+                var rouletteName = ExcelHelper.GetPoppedContentType(entry.RouletteId);
+                var partyMemberMatches = entry.PartyMembers.Any(member =>
+                    member.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+
+                if (!territoryName.Contains(searchText, StringComparison.OrdinalIgnoreCase) &&
+                    !rouletteName.Contains(searchText, StringComparison.OrdinalIgnoreCase) &&
+                    !partyMemberMatches &&
                     !entry.PlayerJobAbbr.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                     return false;
             }
