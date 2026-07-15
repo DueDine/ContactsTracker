@@ -64,6 +64,13 @@ public class MainWindow : Window, IDisposable
     {
         ProcessDataOperationCompletion();
 
+        if (DatabaseV2.LoadFailed)
+        {
+            ImGui.TextColored(ImGuiColors.DalamudRed, "File Corrupted");
+            ImGui.TextWrapped(DatabaseV2.DataPath);
+            ImGui.Separator();
+        }
+
         using var tabBar = ImRaii.TabBar("MainTabBar");
         if (!tabBar) return;
 

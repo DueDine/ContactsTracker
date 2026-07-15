@@ -13,10 +13,11 @@ namespace ContactsTracker.Data;
 public class DatabaseV2
 {
     public static int Version { get; set; } = 2;
-    private static readonly string DataPath = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, $"data_v{Version}.json");
+    internal static readonly string DataPath = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, $"data_v{Version}.json");
     private static readonly string SaveTempPath = $"{DataPath}.tmp";
     private static readonly string TempPath = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, $"temp_v{Version}.json");
     private static readonly Lock EntriesLock = new();
+    internal static bool LoadFailed { get; private set; }
     public static bool isDirty = false;
 
     public static List<DataEntryV2> Entries { get; private set; } = [];
@@ -34,6 +35,8 @@ public class DatabaseV2
 
     public static void Save()
     {
+        if (LoadFailed) return;
+
         lock (EntriesLock)
         {
             var content = JsonConvert.SerializeObject(Entries);
@@ -70,11 +73,13 @@ public class DatabaseV2
             }
             else
             {
+                LoadFailed = true;
                 Plugin.Logger.Error("Failed to load data!");
             }
         }
         catch (Exception e)
         {
+            LoadFailed = true;
             Plugin.Logger.Error($"Failed to load data: {e.Message}");
         }
     }
